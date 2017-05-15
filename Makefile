@@ -1,4 +1,4 @@
-all: generator mljsref jsjsref
+all: generator mlparser mljsref jsjsref
 
 # Init stages
 init:
@@ -14,7 +14,10 @@ init:
 generator:
 	$(MAKE) -C generator
 
-jsjsref: generator
+mlparser: generator
+	$(MAKE) -C jsref/mlparser
+
+jsjsref: generator mlparser
 	$(MAKE) -C jsref jsjsref
 
 mljsref: generator # (requires the ppx)
@@ -55,8 +58,9 @@ publish-github: dist
 # Clean stages
 clean:
 	$(MAKE) -C generator clean
+	$(MAKE) -C jsref/mlparser clean
 	$(MAKE) -C jsref clean
 	rm -Rf doc/jsref || true
 	rm -Rf dist || true
 
-.PHONY: jsjsref mljsref generator generator-stdlib test_init test doc publish publish-github clean
+.PHONY: mlparser jsjsref mljsref generator generator-stdlib test_init test doc publish publish-github clean

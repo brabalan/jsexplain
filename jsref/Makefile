@@ -46,7 +46,7 @@ include .depends
 endif
 
 .depends: $(JSREF_ML) $(PPX_BIN)
-	$(OCAMLDEP) -ppx $(PPX_BIN) -I . -all * > $@
+	$(OCAMLDEP) -ppx $(PPX_BIN) -I . -all !MLParser.ml > $@
 
 ###############################################################
 ###############################################################
@@ -112,27 +112,27 @@ ALL_LINEOF := $(DISPLAYED:.ml=.token.js) $(DISPLAYED:.ml=.mlloc.js) $(DISPLAYED:
 ##### Rule for cmi
 # Ordering of these rules is important, mli rule must be first.
 %.cmi: %.mli
-	ocamlc $(REPLACE_STDLIB) $<
+	ocamlc $(REPLACE_STDLIB) -I mlparser $<
 
 %.cmi: %.ml $(MLTOJS_BIN)
-	$(MLTOJS) -mode cmi -I $(STDLIB_DIR) $<
+	$(MLTOJS) -mode cmi -I $(STDLIB_DIR) -I mlparser $<
 
 ##### Rule for log/unlog/token
 
 %.log.js: %.ml %.cmi $(MLTOJS_BIN)
-	$(MLTOJS) -mode log -I $(STDLIB_DIR) $<
+	$(MLTOJS) -mode log -I $(STDLIB_DIR) -I mlparser $<
 
 %.unlog.js: %.ml %.cmi $(MLTOJS_BIN)
-	$(MLTOJS) -mode unlog -I $(STDLIB_DIR) $<
+	$(MLTOJS) -mode unlog -I $(STDLIB_DIR) -I mlparser $<
 
 %.token.js %.mlloc.js: %.ml %.cmi $(MLTOJS_BIN)
-	$(MLTOJS) -mode token -I $(STDLIB_DIR) $<
+	$(MLTOJS) -mode token -I $(STDLIB_DIR) -I mlparser $<
 
 %.pseudo.js: %.ml %.cmi $(MLTOJS_BIN)
-	$(MLTOJS) -mode pseudo -I $(STDLIB_DIR) $<
+	$(MLTOJS) -mode pseudo -I $(STDLIB_DIR) -I mlparser $<
 
 %.ptoken.js: %.ml %.cmi $(MLTOJS_BIN)
-	$(MLTOJS) -mode ptoken -I $(STDLIB_DIR) $<
+	$(MLTOJS) -mode ptoken -I $(STDLIB_DIR) -I mlparser $<
 
 ##### Rule for lineof.js
 
@@ -144,7 +144,7 @@ lineof.js: $(ALL_LINEOF) $(LINEOF_BIN)
 #--LATER (optional) add as dependencies the unlog files: $(JSREF_ML:.ml=.unlog.js)
 
 assembly.js: $(ASSEMBLY_JS) $(ASEMBLY_BIN)
-	$(ASSEMBLY) -o $@ $(ASSEMBLY_JS)
+	$(ASSEMBLY) -o $@ $(ASSEMBLY_JS) ./mlparser/CalcSyntax.unlog.js ./mlparser/CalcInterpreter.unlog.js ./mlparser/CalcInterpreter.log.js
 
 ##### Rule for displayed_sources.js
 
@@ -207,11 +207,11 @@ Translate_syntax.cmo: Translate_syntax.ml Translate_syntax.mli Translate_syntax.
 
 # Ordering of the .cmo rules is important. mli dependency forces "standard" compilation
 %.cmo: %.ml %.mli %.cmi $(PPX_BIN)
-	ocamlc -c $(PPX_FLAG) $<
+	ocamlc -c $(PPX_FLAG) -I mlparser $<
 
 # Standalone .ml files
 %.cmo: %.ml %.cmi $(PPX_BIN)
-	ocamlc -c $(REPLACE_STDLIB) $(PPX_FLAG) $<
+	ocamlc -c $(REPLACE_STDLIB) -I mlparser $(PPX_FLAG) $<
 
 clean_mljsref:
 	sh -c "rm -f $(ML_FRONTEND_SRC)/*.mli"
