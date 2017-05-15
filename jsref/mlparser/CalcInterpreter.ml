@@ -1,5 +1,4 @@
 open CalcSyntax
-open CalcParser
 
 type ('a, 'b) either =
 | Left of 'a [@f value]

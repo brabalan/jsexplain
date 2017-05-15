@@ -76,7 +76,7 @@ var initialSourceName = "";
 
 var source_files = [
   // '',
-  'var x = 1;\nx++;\nx',
+  /*'var x = 1;\nx++;\nx',
   'var x = { a : { c : 1 } };\nx.a.b = 2;\nx.a.x = x;\nx',
   'var t = [];\nfor (var i = 0; i < 3; i++) {\n  t[i] = function() { return i; } \n};\nt[0](); ',
   'var t = [];\nfor (var i = 0; i < 3; i++) {\n  t[i] = (function(j) {\n      return function() { return j; }; \n    })(i); \n};\nt[0](); ',
@@ -102,7 +102,10 @@ var source_files = [
   '(2 < 3) && ((3 > 5) || (true || x.f))',
   '2+2',
   'f()',
-  '2 === 2',
+  '2 === 2',*/
+  '5.0 + 4.5',
+  '32 mod 2',
+  '5 * 6 + 10.2'
 ];
 
 source_files.reduce((select, file_content) => {
@@ -168,7 +171,7 @@ function setInitialSourceCode(name, text) {
 }
 
 $('#select_source_code').change(e => {
-  setInitialSourceCode("example" + (e.target.selectedOptions[0].index - 1) + ".js", e.target.value);
+  setInitialSourceCode("example" + (e.target.selectedOptions[0].index - 1) + ".ml", e.target.value);
   buttonRunHandler();
 });
 $('#select_file').change(e => {
@@ -1382,14 +1385,16 @@ function assignExtraInfosInTrace() {
 
 function runDebug() {
   reset_datalog();
-  JsInterpreter.run_javascript(program);
+  // JsInterpreter.run_javascript(program);
+  CalcInterpreter.eval_expr(program);
 }
 
 function run() {
  reset_datalog();
  var success = true;
  try {
-    JsInterpreter.run_javascript(program);
+    // JsInterpreter.run_javascript(program);
+    CalcInterpreter.eval_expr(program);
  } catch (e) {
    success = false;
    // alert("Error during the run");
@@ -1409,7 +1414,8 @@ function run() {
 }
 
 function parseSource(source, name, readOnly) {
-  var tree = esprimaToAST(esprima.parse(source, {loc: true, range: true}), source, name);
+  var tree = CalcParserLib.parseExpr(source);
+  //var tree = esprimaToAST(esprima.parse(source, {loc: true, range: true}), source, name);
   newSourceDoc(name, source, readOnly);
   return tree;
 }
@@ -1435,7 +1441,7 @@ function readSourceParseAndRun() {
 
 // interpreter file displayed initially
 // -- viewFile(tracer_files[0].file);
-viewFile("JsInterpreter.pseudo");
+viewFile("CalcInterpreter.pseudo");
 
 //$timeout(function() {codeMirror.refresh();});
 

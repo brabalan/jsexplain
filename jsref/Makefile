@@ -89,6 +89,8 @@ ASSEMBLY_JS_FILES := \
 	JsInterpreterMonads.unlog.js \
 	JsInterpreter.log.js \
 	JsInterpreterUtils.unlog.js \
+	mlparser/CalcSyntax.unlog.js \
+	mlparser/CalcInterpreter.log.js \
 	ModuleExport.js
 
 ASSEMBLY_JS := \
@@ -98,7 +100,8 @@ ASSEMBLY_JS := \
 ###############################################################
 
 DISPLAYED := \
-	JsInterpreter.ml
+	./mlparser/CalcInterpreter.ml
+	# JsInterpreter.ml
 
 ALL_DISPLAYED := $(DISPLAYED:.ml=.unlog.js) $(DISPLAYED:.ml=.pseudo.js) $(DISPLAYED)
 
@@ -144,7 +147,7 @@ lineof.js: $(ALL_LINEOF) $(LINEOF_BIN)
 #--LATER (optional) add as dependencies the unlog files: $(JSREF_ML:.ml=.unlog.js)
 
 assembly.js: $(ASSEMBLY_JS) $(ASEMBLY_BIN)
-	$(ASSEMBLY) -o $@ $(ASSEMBLY_JS) ./mlparser/CalcSyntax.unlog.js ./mlparser/CalcInterpreter.unlog.js ./mlparser/CalcInterpreter.log.js
+	$(ASSEMBLY) -o $@ $(ASSEMBLY_JS)
 
 ##### Rule for displayed_sources.js
 

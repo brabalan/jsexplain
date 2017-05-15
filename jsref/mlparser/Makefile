@@ -30,8 +30,8 @@ calc: CalcSyntax.cmo CalcParser.cmo CalcMain.ml
 clean:
 	rm *.cmo
 	rm *.cmi
-	rm parser.map
+	# rm parser.map
 	rm parser.byte
 	rm *.js
-	rm *.o
+	# rm *.o
 #	rm *.cmx

@@ -31,7 +31,6 @@ let ( -. ) = Pervasives.( -. );;
 let ( *. ) = Pervasives.( *. );;
 let ( /. ) = Pervasives.( /. );;
 
-(*
 let ( ** ) = Pervasives.( ** );;
 let atan = Pervasives.atan;;
 let exp = Pervasives.exp;;
@@ -43,7 +42,6 @@ let neg_infinity = Pervasives.neg_infinity;;
 let nan = Pervasives.nan;;
 let max_float = Pervasives.max_float;;
 let min_float = Pervasives.min_float;;
-*)
 
 (**{6 String operations }*)
 (*
@@ -51,9 +49,7 @@ let (^) = Pervasives.(^);;
 *)
 
 (**{6 Character operations }*)
-(*
 let int_of_char = Pervasives.int_of_char;;
-*)
 
 (**{6 String conversion functions }*)
 (*
@@ -71,11 +67,10 @@ let prerr_newline = Pervasives.prerr_newline;;
 *)
 
 (**{6 References }*)
-(** for future use for the global heap
+type 'a ref = 'a Pervasives.ref;;
 let ref = Pervasives.ref;;
 let (:=) = Pervasives.(:=);;
 let (!) = Pervasives.(!);;
-*)
 
 (**{5 Pervasives-incompatible Definitions }
 
@@ -148,3 +143,15 @@ val string_concat : string -> string -> string (* + *)
 
 let strlength = String.length;;
 let substring n m s = String.sub s n m;;
+let strget s n =
+  try
+    Some (s.[n])
+  with
+    Invalid_argument _ -> None
+
+(**{6 List library }*)
+let rev lst =
+  let rec aux acc = function
+  | [] -> acc
+  | x::xs -> aux (x::acc) xs
+  in aux [] lst

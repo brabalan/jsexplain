@@ -52,7 +52,6 @@ val ( -. ) : float -> float -> float
 val ( *. ) : float -> float -> float
 val ( /. ) : float -> float -> float
 
-(*
 val ( ** ) : float -> float -> float
 val atan : float -> float
 val exp : float -> float
@@ -64,7 +63,6 @@ val neg_infinity : float
 val nan : float
 val max_float : float
 val min_float : float
-*)
 
 (**{6 String operations }*)
 (*
@@ -72,9 +70,7 @@ val (^) : string -> string -> string
 *)
 
 (**{6 Character operations }*)
-(*
 val int_of_char : char -> int
-*)
 
 (**{6 String conversion functions }*)
 (*
@@ -92,12 +88,10 @@ val prerr_newline : unit -> unit
 *)
 
 (**{6 References }*)
-(** for future use for the global heap
+type 'a ref = 'a Pervasives.ref;;
 val ref : 'a -> 'a ref
 val (:=) : 'a ref -> 'a -> unit
 val (!) : 'a ref -> 'a
-*)
-
 
 
 (* *************************************** *)
@@ -185,3 +179,8 @@ val strlength : string -> int (* in JS :  function (x) { return x.length; } *)
 (** Substring extraction. Note different ordering of arguments from String.sub:
 [ substring n m s = String.sub s n m ] *)
 val substring : int -> int -> string -> string  (* function(x) { return x.slice(n, n+m); } *)
+val strget : string -> int -> char option
+
+
+(**{6 List library}*)
+val rev : 'a list -> 'a list
