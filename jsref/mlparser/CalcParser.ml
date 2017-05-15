@@ -25,8 +25,8 @@ let rec parse_binary_op stream =
     in parser [< left = parse_leaf ; s >] -> aux left s
 
   and parse_unary_op = parser
-  | [< 'Kwd "+" ; e = parse_binary_op >] -> Expr_unary_op (Unary_op_add, e)
-  | [< 'Kwd "-" ; e = parse_binary_op >] -> Expr_unary_op (Unary_op_sub, e)
+  | [< 'Kwd "+" ; e = parse_leaf >] -> Expr_unary_op (Unary_op_add, e)
+  | [< 'Kwd "-" ; e = parse_leaf >] -> Expr_unary_op (Unary_op_sub, e)
 
   and parse_leaf = parser
   | [< 'Kwd "(" ; e = parse_binary_op ; 'Kwd ")" >] -> e
