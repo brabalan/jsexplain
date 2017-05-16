@@ -846,6 +846,9 @@ function show_object(state, loc, target, depth) {
           // TODO: complete
 
           break;
+        case "Literal_int":
+        case "Literal_float":
+        case "Right":
         case "Coq_value_prim":
         case "Coq_value_object":
           show_value(state, attribute, targetsub, depth-1);
@@ -879,6 +882,15 @@ function show_object(state, loc, target, depth) {
 function show_value(state, v, target, depth) {
   var t = $("#" + target);
   switch (v.tag) {
+  case "Right":
+    var s = v.value.value;
+    t.append(s);
+    return;
+  case "Literal_int":
+  case "Literal_float":
+    var s = v.value;
+    t.append(s);
+    return;
   case "Coq_value_prim":
     var s = string_of_prim(v.value);
     t.append(s);
@@ -1020,10 +1032,12 @@ function interp_val_is_base_value(val) {
 
 function interp_val_is_js_prim(v) {
   return has_tag_in_set(v, [ "Coq_prim_undef", "Coq_prim_null", "Coq_prim_bool", "Coq_prim_number", "Coq_prim_string" ]);
+  // return has_tag_in_set(vn ["Literal_int", "Literal_float"]);
 }
 
 function interp_val_is_js_value(v) {
-  return has_tag_in_set(v, ["Coq_value_prim", "Coq_value_object" ]);
+  // return has_tag_in_set(v, ["Coq_value_prim", "Coq_value_object" ]);
+  return has_tag_in_set(v, ["Literal_int", "Literal_float", "Right"]);
 }
 
 function interp_val_is_loc(v) {
@@ -1035,7 +1049,8 @@ function interp_val_is_list(v) {
 }
   
 function interp_val_is_syntax(v) {
-  return has_tag_in_set(v, [ "Coq_expr_this", "Coq_expr_identifier", "Coq_expr_literal", "Coq_expr_object", "Coq_expr_array", "Coq_expr_function", "Coq_expr_access", "Coq_expr_member", "Coq_expr_new", "Coq_expr_call", "Coq_expr_unary_op", "Coq_expr_binary_op", "Coq_expr_conditional", "Coq_expr_assign", "Coq_propbody_val", "Coq_propbody_get", "Coq_propbody_set", "Coq_funcbody_intro", "Coq_stat_expr", "Coq_stat_label", "Coq_stat_block", "Coq_stat_var_decl", "Coq_stat_if", "Coq_stat_do_while", "Coq_stat_while", "Coq_stat_with", "Coq_stat_throw", "Coq_stat_return", "Coq_stat_break", "Coq_stat_continue", "Coq_stat_try", "Coq_stat_for", "Coq_stat_for_var", "Coq_stat_for_in", "Coq_stat_for_in_var", "Coq_stat_debugger", "Coq_stat_switch", "Coq_switchbody_nodefault", "Coq_switchbody_withdefault", "Coq_switchclause_intro", "Coq_prog_intro", "Coq_element_stat", "Coq_element_func_decl" ]);
+  // return has_tag_in_set(v, [ "Coq_expr_this", "Coq_expr_identifier", "Coq_expr_literal", "Coq_expr_object", "Coq_expr_array", "Coq_expr_function", "Coq_expr_access", "Coq_expr_member", "Coq_expr_new", "Coq_expr_call", "Coq_expr_unary_op", "Coq_expr_binary_op", "Coq_expr_conditional", "Coq_expr_assign", "Coq_propbody_val", "Coq_propbody_get", "Coq_propbody_set", "Coq_funcbody_intro", "Coq_stat_expr", "Coq_stat_label", "Coq_stat_block", "Coq_stat_var_decl", "Coq_stat_if", "Coq_stat_do_while", "Coq_stat_while", "Coq_stat_with", "Coq_stat_throw", "Coq_stat_return", "Coq_stat_break", "Coq_stat_continue", "Coq_stat_try", "Coq_stat_for", "Coq_stat_for_var", "Coq_stat_for_in", "Coq_stat_for_in_var", "Coq_stat_debugger", "Coq_stat_switch", "Coq_switchbody_nodefault", "Coq_switchbody_withdefault", "Coq_switchclause_intro", "Coq_prog_intro", "Coq_element_stat", "Coq_element_func_decl" ]);
+  return has_tag_in_set(v, ["Expr_binary_op", "Expr_unary_op", "Expr_literal"]);
 }
 
 function interp_val_is_state(v) {
