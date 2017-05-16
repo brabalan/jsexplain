@@ -1,27 +1,21 @@
 open CalcSyntax
 open CalcParser
+open CalcInterpreter
 
-let rec print_expr = function
-| Expr_literal lit -> print_literal lit
-| Expr_unary_op (op, e) -> print_unary_op op ^ print_expr e
-| Expr_binary_op (arg1, op, arg2) -> "(" ^ print_expr arg1 ^ print_binary_op op ^ print_expr arg2 ^ ")"
-
-and print_literal = function
-| Literal_int i -> string_of_int i
-| Literal_float f -> string_of_float f
-
-and print_unary_op = function
-| Unary_op_add -> "+"
-| Unary_op_sub -> "-"
-
-and print_binary_op = function
-| Binary_op_add -> "+"
-| Binary_op_sub -> "-"
-| Binary_op_mul -> "*"
-| Binary_op_div -> "/"
-| Binary_op_mod -> " mod "
+let print_location loc =
+  print_char '(' ;
+  print_int loc.start.line ;
+  print_string ", " ;
+  print_int loc.start.column ;
+  print_string "): "
 
 let () =
   let code = Sys.argv.(1) in
-  let ast = parse_string code in
-  print_endline (print_expr ast)
+  let ast = parse_string "test" code in
+  match eval_expr ast with
+  (* | Left { loc = loc ; value = err } -> prerr_endline err *)
+  | Left err -> prerr_endline err
+  | Right lit ->
+    print_location (get_literal_location lit) ;
+    print_float (float_of_literal lit) ;
+    print_newline ()

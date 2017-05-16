@@ -24,7 +24,7 @@ CalcInterpreter.log.js: CalcInterpreter.ml ../../generator/main.byte ../../gener
 parser.js: parser.byte CalcSyntax.unlog.js CalcInterpreter.unlog.js CalcInterpreter.log.js
 	js_of_ocaml parser.byte
 
-calc: CalcSyntax.cmo CalcParser.cmo CalcMain.ml
+calc: CalcSyntax.cmo CalcParser.cmo CalcInterpreter.cmo CalcMain.ml
 	ocamlfind ocamlc -o $@ $^
 
 clean:

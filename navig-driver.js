@@ -103,6 +103,7 @@ var source_files = [
   '2+2',
   'f()',
   '2 === 2',*/
+  '43',
   '5.0 + 4.5',
   '32 mod 2',
   '5 * 6 + 10.2'
@@ -1414,7 +1415,7 @@ function run() {
 }
 
 function parseSource(source, name, readOnly) {
-  var tree = CalcParserLib.parseExpr(source);
+  var tree = CalcParserLib.parseExpr(name, source);
   //var tree = esprimaToAST(esprima.parse(source, {loc: true, range: true}), source, name);
   newSourceDoc(name, source, readOnly);
   return tree;
