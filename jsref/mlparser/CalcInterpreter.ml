@@ -9,91 +9,73 @@ type ('a, 'b) either =
 (** Function used to test if a given literal value represents a zero, regardless of whether it is an integer or a float. *)
 let literal_is_null lit =
   match lit with
-  | Literal_int (_, i) -> float_of_int i = 0.0
+  | Literal_int (_, i) -> number_of_int i = 0.0
   | Literal_float (_, f) -> f = 0.0
 
 (********************************************************************************
- * Primitives performing the operations : +, -, *, / and mod
+ * Primitives performing the operations : +, -, *, /
  ********************************************************************************)
 
-let add_literals = function
+let add_literals a b = match a with
 | Literal_int (loc, lit1) ->
   begin
-    function
+    match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 + lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 +. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
-    function
+    match b with
     | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 +. float_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 +. lit2))
   end
 
-let sub_literals = function
+let sub_literals a b = match a with
 | Literal_int (loc, lit1) ->
   begin
-    function
+    match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 - lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 -. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
-    function
+    match b with
     | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 -. float_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 -. lit2))
   end
 
-let mul_literals = function
+let mul_literals a b = match a with
 | Literal_int (loc, lit1) ->
   begin
-    function
+    match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 * lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 *. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
-    function
+    match b with
     | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 *. float_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 *. lit2))
   end
 
-let div_literals = function
+let div_literals a b = match a with
 | Literal_int (loc, lit1) ->
   begin
-    fun lit ->
-      if literal_is_null lit then
-        (* Left { loc = loc ; value = "Division by zero" } *)
-        Left "Division by zero"
-      else match lit with
-      | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 / lit2))
-      | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 /. lit2))
+    if literal_is_null b then
+      Left { loc = loc ; value = "Division by zero" }
+    else match b with
+    | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 / lit2))
+    | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 /. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
-    fun lit ->
-      if literal_is_null lit then
-        (* Left { loc = loc ; value = "Division by zero" } *)
-        Left "Division by zero"
-      else match lit with
-      | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 /. float_of_int lit2))
-      | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 /. lit2))
+    if literal_is_null b then
+      Left { loc = loc ; value = "Division by zero" }
+    else match b with
+    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 /. float_of_int lit2))
+    | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 /. lit2))
   end
 
-let mod_literals = function
-| Literal_int (loc, lit1) ->
-  begin
-    function
-    | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 + lit2))
-    (* The modulo applies only on integers *)
-    (* | Literal_float (_, lit2) -> Left { loc = loc ; value = "Expected an int and got a float" } *)
-    | Literal_float (_, lit2) -> Left "Expected an int and got a float"
-  end
-(* Same here *)
-(* | Literal_float (loc, lit1) -> fun _ -> Left { loc = loc ; value = "Expected an int and got a float" } *)
-| Literal_float (loc, lit1) -> fun _ -> Left "Expected an int and got a float"
-
-(* Function used to evaluate a formula AST. It is split in a lot of sub-functions to help the JS generator *)
 let rec eval_expr _term_ =
   (* Implementation of the unary minus *)
   let minus_lit = function
@@ -101,12 +83,11 @@ let rec eval_expr _term_ =
   | Literal_float (loc, f) -> Literal_float (loc, 0.0 -. f)
 
   (* Calls the right primitive regarding the given binary operator *)
-  in let apply_binary_op lit1 lit2 = function
+  in let apply_binary_op lit1 lit2 _term_ = match _term_ with
   | Binary_op_add _ -> add_literals lit1 lit2
   | Binary_op_sub _ -> sub_literals lit1 lit2
   | Binary_op_mul _ -> mul_literals lit1 lit2
   | Binary_op_div _ -> div_literals lit1 lit2
-  | Binary_op_mod _ -> mod_literals lit1 lit2
 
   (* Checks whether the given unary operator imposes some computation or not and than do it *)
   in let eval_unary_op op arg =

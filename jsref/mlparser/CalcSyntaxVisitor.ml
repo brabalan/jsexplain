@@ -32,7 +32,6 @@ let js_of_binary_op = function
 | Binary_op_sub loc -> call_js_constructor "CalcSyntax.Binary_op_sub" loc
 | Binary_op_mul loc -> call_js_constructor "CalcSyntax.Binary_op_mul" loc
 | Binary_op_div loc -> call_js_constructor "CalcSyntax.Binary_op_div" loc
-| Binary_op_mod loc -> call_js_constructor "CalcSyntax.Binary_op_mod" loc
 
 let rec js_of_expr = function
 | Expr_literal (loc, lit) ->

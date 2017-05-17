@@ -37,7 +37,6 @@ type binary_op =
 | Binary_op_sub of location [@f loc]
 | Binary_op_mul of location [@f loc]
 | Binary_op_div of location [@f loc]
-| Binary_op_mod of location [@f loc]
 
 type expr =
 | Expr_literal of location * literal [@f loc, value]

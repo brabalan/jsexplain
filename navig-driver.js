@@ -105,8 +105,9 @@ var source_files = [
   '2 === 2',*/
   '43',
   '5.0 + 4.5',
-  '32 mod 2',
-  '5 * 6 + 10.2'
+  '32 / 2',
+  '5 * 6 + 10.2',
+  '43 + 4 / 0'
 ];
 
 source_files.reduce((select, file_content) => {
@@ -849,6 +850,11 @@ function show_object(state, loc, target, depth) {
         case "Literal_int":
         case "Literal_float":
         case "Right":
+        case "Left":
+        case "Binary_op_add":
+        case "Binary_op_sub":
+        case "Binary_op_mul":
+        case "Binary_op_div":
         case "Coq_value_prim":
         case "Coq_value_object":
           show_value(state, attribute, targetsub, depth-1);
@@ -883,13 +889,30 @@ function show_value(state, v, target, depth) {
   var t = $("#" + target);
   switch (v.tag) {
   case "Right":
-    var s = v.value.value;
+    var s = "Right " + v.value.value;
+    t.append(s);
+    return;
+  case "Left":
+    var loc = "(" + v.err.loc.start.line + ", " + v.err.loc.start.column + ")"
+    var s = "Left " + v.err.value + " at " + loc;
     t.append(s);
     return;
   case "Literal_int":
   case "Literal_float":
     var s = v.value;
     t.append(s);
+    return;
+  case "Binary_op_add":
+    t.append("Binary operator +");
+    return;
+  case "Binary_op_sub":
+    t.append("Binary operator -");
+    return;
+  case "Binary_op_mul":
+    t.append("Binary operator *");
+    return;
+  case "Binary_op_div":
+    t.append("Binary operator /");
     return;
   case "Coq_value_prim":
     var s = string_of_prim(v.value);
@@ -1037,7 +1060,7 @@ function interp_val_is_js_prim(v) {
 
 function interp_val_is_js_value(v) {
   // return has_tag_in_set(v, ["Coq_value_prim", "Coq_value_object" ]);
-  return has_tag_in_set(v, ["Literal_int", "Literal_float", "Right"]);
+  return has_tag_in_set(v, ["Literal_int", "Literal_float", "Right", "Left", "Binary_op_add", "Binary_op_sub", "Binary_op_mul", "Binary_op_div"]);
 }
 
 function interp_val_is_loc(v) {
@@ -1457,7 +1480,7 @@ function readSourceParseAndRun() {
 
 // interpreter file displayed initially
 // -- viewFile(tracer_files[0].file);
-viewFile("CalcInterpreter.pseudo");
+viewFile("CalcInterpreter.ml");
 
 //$timeout(function() {codeMirror.refresh();});
 

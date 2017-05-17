@@ -1,5 +1,4 @@
 open CalcSyntax
-(* open Genlex *)
 
 module Lexer = struct
   let column_add (pos : position) n = { line = pos.line ; column = pos.column + n }
@@ -7,7 +6,7 @@ module Lexer = struct
   let inc_column pos = column_add pos 1
   let inc_line (pos : position) = { line = pos.line + 1 ; column = 0 }
 
-  let kwds = ["mod"]
+  let kwds = []
 
   let rec skip_blanks pos = parser
   | [< '( ' ' | '\t') ; s >] -> pos := inc_column !pos ; skip_blanks pos s
@@ -174,12 +173,6 @@ let rec parse_binary_op name stream =
       let stop = (get_location right).stop in
       let n_loc = { file = name ; start = start ; stop = stop } in
       aux (Expr_binary_op (n_loc, left, Binary_op_div loc, right)) s
-
-    | [< '{ loc = loc ; value = Kwd "mod" } ; right = parse_leaf ; s >] ->
-      let start = (get_location left).start in
-      let stop = (get_location right).stop in
-      let n_loc = { file = name ; start = start ; stop = stop } in
-      aux (Expr_binary_op (n_loc, left, Binary_op_mod loc, right)) s
 
     | [< >] -> left
     in parser [< left = parse_leaf ; s >] -> aux left s
