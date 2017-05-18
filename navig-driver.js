@@ -258,7 +258,7 @@ function lookup_var_in_object(state, name, loc) {
    switch (ro.tag) {
      case "None":
        return undefined;
-    case "Some":
+     case "Some":
        var attribute = ro.value;
        switch (attribute.tag) {
          case "Coq_attributes_data_of":

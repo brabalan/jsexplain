@@ -21,12 +21,12 @@ let add_literals a b = match a with
   begin
     match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 + lit2))
-    | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 +. lit2))
+    | Literal_float (_, lit2) -> Right (Literal_float (loc, number_of_int lit1 +. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
     match b with
-    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 +. float_of_int lit2))
+    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 +. number_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 +. lit2))
   end
 
@@ -35,12 +35,12 @@ let sub_literals a b = match a with
   begin
     match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 - lit2))
-    | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 -. lit2))
+    | Literal_float (_, lit2) -> Right (Literal_float (loc, number_of_int lit1 -. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
     match b with
-    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 -. float_of_int lit2))
+    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 -. number_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 -. lit2))
   end
 
@@ -49,12 +49,12 @@ let mul_literals a b = match a with
   begin
     match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 * lit2))
-    | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 *. lit2))
+    | Literal_float (_, lit2) -> Right (Literal_float (loc, number_of_int lit1 *. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
     match b with
-    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 *. float_of_int lit2))
+    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 *. number_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 *. lit2))
   end
 
@@ -65,14 +65,14 @@ let div_literals a b = match a with
       Left { loc = loc ; value = "Division by zero" }
     else match b with
     | Literal_int (_, lit2) -> Right (Literal_int (loc, lit1 / lit2))
-    | Literal_float (_, lit2) -> Right (Literal_float (loc, float_of_int lit1 /. lit2))
+    | Literal_float (_, lit2) -> Right (Literal_float (loc, number_of_int lit1 /. lit2))
   end
 | Literal_float (loc, lit1) ->
   begin
     if literal_is_null b then
       Left { loc = loc ; value = "Division by zero" }
     else match b with
-    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 /. float_of_int lit2))
+    | Literal_int (_, lit2) -> Right (Literal_float (loc, lit1 /. number_of_int lit2))
     | Literal_float (_, lit2) -> Right (Literal_float (loc, lit1 /. lit2))
   end
 
@@ -120,7 +120,7 @@ let rec eval_expr _term_ =
 
 (* Conversion from literal to float *)
 let float_of_literal = function
-| Literal_int (_, i) -> float_of_int i
+| Literal_int (_, i) -> number_of_int i
 | Literal_float (_, f) -> f
 
 (*
