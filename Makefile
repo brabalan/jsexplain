@@ -1,4 +1,5 @@
-all: generator mlparser mljsref jsjsref
+# all: generator mlparser mljsref jsjsref mlexplain
+all: generator mlparser mlexplain
 
 # Init stages
 init:
@@ -22,6 +23,9 @@ jsjsref: generator mlparser
 
 mljsref: generator # (requires the ppx)
 	$(MAKE) -C jsref mljsref
+
+mlexplain: generator
+	$(MAKE) -C mlexplain
 
 # Test Stages
 test_init:
@@ -60,6 +64,7 @@ clean:
 	$(MAKE) -C generator clean
 	$(MAKE) -C jsref/mlparser clean
 	$(MAKE) -C jsref clean
+	$(MAKE) -C mlexplain clean
 	rm -Rf doc/jsref || true
 	rm -Rf dist || true
 
