@@ -36,6 +36,7 @@ type expression =
 | Expression_constant of constant located [@f constant]
 | Expression_ident of string located [@f id]
 | Expression_let of bool * pattern located * expression located * expression located [@f is_rec, id, e1, e2]
+| Expression_tuple of expression located list [@f components]
 
 and pattern =
 | Pattern_any of location [@f loc]

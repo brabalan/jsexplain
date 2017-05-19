@@ -7,6 +7,13 @@ type value =
 | Value_string of string [@f value]
 | Value_tuple of value list [@f value]
 
+let rev lst =
+  let rec aux acc lst = match lst with
+  | [] -> acc
+  | h::t -> aux (h::acc) t
+
+  in aux [] lst
+
 let map f lst =
   let rec aux acc lst = match lst with
   | [] -> rev acc
@@ -23,10 +30,23 @@ let rec zipwith f l1 l2 = match l1 with
     | h2::t2 -> f h1 h2 :: zipwith f t1 t2
   end
 
-(* val fold : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a *)
-let rec fold f fst rest = match rest with
-| [] -> fst
-| h::t -> fold f (f fst h) rest
+let rec all_true lst = match lst with
+| [] -> true
+| h::t -> h && all_true t
+
+let rec lift_option lst = match lst with
+| [] -> Some []
+| h::t ->
+  begin
+    match h with
+    | None -> None
+    | Some v ->
+      begin
+        match lift_option t with
+        | None -> None
+        | Some l -> Some (v::l)
+      end
+  end
 
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
@@ -56,7 +76,9 @@ let rec value_eq v1 v2 = match v1 with
 | Value_tuple t1 ->
   begin
     match v2 with
-    | Value_tuple t2 -> fold ( && ) true (zipwith value_eq t1 t2) 
+    | Value_tuple t2 ->
+      let blist = zipwith value_eq t1 t2 in
+      all_true blist
     | _ -> false
   end
 
@@ -82,6 +104,11 @@ let rec run_expression ctx _term_ = match _term_ with
     | Some ctx' -> run_expression ctx' e2.value
     | None -> None
   end
+| Expression_tuple tuple ->
+  let value_opts = map (fun e -> run_expression ctx e.value) tuple in
+  match lift_option value_opts with
+  | None -> None
+  | Some t -> Some (Value_tuple t)
 
 and pattern_match ctx expr patt = match patt with
 | Pattern_any _ -> Some ctx
