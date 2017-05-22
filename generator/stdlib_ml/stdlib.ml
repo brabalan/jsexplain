@@ -155,3 +155,11 @@ let rev lst =
   | [] -> acc
   | x::xs -> aux (x::acc) xs
   in aux [] lst
+
+let array_append = Array.append ;;
+let array_fold = Array.fold_left ;;
+let array_get = Array.get ;;
+let array_length = Array.length ;;
+let array_make = Array.make ;;
+let array_map = Array.map ;;
+let array_set = Array.set ;;

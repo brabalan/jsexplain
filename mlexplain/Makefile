@@ -71,13 +71,19 @@ displayed_sources.js: $(ALL_DISPLAYED) $(DISPLAYGEN_BIN)
 lineof.js: $(ALL_LINEOF) $(LINEOF_BIN)
 	$(LINEOF) -o $@ $(ALL_LINEOF)
 
-# mlexplain.byte: MLInterpreter.cmo
-	# ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg -o $@ $^
+MLSyntax.cmo: MLSyntax.ml
+	ocamlfind ocamlc -o $@ -c $<
 
-# mlexplain.js: 
-	# js_of_ocaml $<
+TranslateSyntax.cmo: TranslateSyntax.ml MLSyntax.cmo
+	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -o $@ -c $<
 
-mlexplain: assembly.js lineof.js displayed_sources.js 
+frontend.byte: MLSyntax.cmo TranslateSyntax.cmo
+	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg -o $@ $^
+
+frontend.js: frontend.byte
+	js_of_ocaml --disable genprim +weak.js +toplevel.js $<
+
+mlexplain: assembly.js lineof.js displayed_sources.js frontend.js
 
 clean:
 	rm *.cmo || true
@@ -85,3 +91,4 @@ clean:
 	rm *.cmx || true
 	rm mlexplain.byte || true
 	rm *.js || true
+	rm *.byte || true

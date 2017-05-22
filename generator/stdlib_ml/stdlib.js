@@ -182,3 +182,55 @@ var substring = function(n, m, s) {
     throw "strlength invalid arguments";
   return s.slice(n, n+m);
 };
+
+var array_append = function(a, b) {
+  if (typeof(a) != "object" || typeof(b) != "object")
+    throw "array_length invalid arguments";
+  return a.concat(b);
+}
+
+var array_fold = function(f, acc, ary) {
+  if (typeof(f) != "function" || typeof(ary) != "object")
+    throw "array_fold invalid arguments";
+
+  var a = acc;
+  for(i = 0; i < ary.length; i++)
+    a = f(a, ary[i]);
+  return a;
+}
+
+var array_get = function(ary, i) {
+  if (typeof(ary) != "object" || typeof(i) != "number")
+    throw "array_get invalid arguments";
+  return ary[i];
+}
+
+var array_length = function(ary) {
+  if (typeof(ary) != "object")
+    throw "array_length invalid arguments";
+  return ary.length;
+}
+
+var array_make = function(i, v) {
+  if (typeof(i) != "number")
+    throw "array_length invalid arguments";
+  var ary = [];
+  for(x = 0; x < i; x++)
+    ary = ary.concat([v]);
+  return ary;
+}
+
+var array_map = function(f, ary) {
+  if (typeof(f) != "function" || typeof(ary) != "object")
+    throw "array_map invalid arguments";
+  var n_ary = ary.slice();
+  for(i = 0; i < ary.length; i++)
+    n_ary[i] = f(ary[i]);
+  return n_ary;
+}
+
+var array_set = function(ary, i, v) {
+  if (typeof(ary) != "object" || typeof(i) != "number")
+    throw "array_get invalid arguments";
+  ary[i] = v;
+}

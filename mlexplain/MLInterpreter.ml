@@ -5,7 +5,7 @@ type value =
 | Value_float of float [@f value]
 | Value_char of char [@f value]
 | Value_string of string [@f value]
-| Value_tuple of value list [@f value]
+| Value_tuple of value array [@f value]
 
 let rev lst =
   let rec aux acc lst = match lst with
@@ -21,32 +21,37 @@ let map f lst =
 
   in aux [] lst
 
-let rec zipwith f l1 l2 = match l1 with
-| [] -> []
-| h1::t1 ->
-  begin
-    match l2 with
-    | [] -> []
-    | h2::t2 -> f h1 h2 :: zipwith f t1 t2
-  end
+let all_true ary =
+  let f cur b = cur && b in
+  array_fold f true ary
 
-let rec all_true lst = match lst with
-| [] -> true
-| h::t -> h && all_true t
+let min a b = if a <= b then a else b
 
-let rec lift_option lst = match lst with
-| [] -> Some []
-| h::t ->
-  begin
-    match h with
-    | None -> None
-    | Some v ->
-      begin
-        match lift_option t with
-        | None -> None
-        | Some l -> Some (v::l)
-      end
-  end
+let zipwith f a1 a2 =
+  let min_size = int_of_number (min (number_of_int (array_length a1)) (number_of_int (array_length a2))) in
+  let res = array_make min_size (f (array_get a1 0) (array_get a2 0)) in
+  let rec for_loop i =
+    if (number_of_int i) < (number_of_int min_size) then
+    begin
+      array_set res i (f (array_get a1 i) (array_get a2 i)) ;
+      for_loop (i+1)
+    end
+    else
+      res
+  in for_loop 1
+
+let lift_option ary =
+  let f ary_opt opt = match ary_opt with
+  | None -> None
+  | Some ary ->
+    begin
+      match opt with
+      | None -> None
+      | Some v -> Some (array_append ary (array_make 1 v))
+    end
+
+  in array_fold f (Some [| |]) ary
+
 
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
@@ -105,7 +110,7 @@ let rec run_expression ctx _term_ = match _term_ with
     | None -> None
   end
 | Expression_tuple tuple ->
-  let value_opts = map (fun e -> run_expression ctx e.value) tuple in
+  let value_opts = array_map (fun e -> run_expression ctx e.value) tuple in
   match lift_option value_opts with
   | None -> None
   | Some t -> Some (Value_tuple t)

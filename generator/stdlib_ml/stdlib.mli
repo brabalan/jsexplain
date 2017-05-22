@@ -184,3 +184,11 @@ val strget : string -> int -> char option
 
 (**{6 List library}*)
 val rev : 'a list -> 'a list
+
+val array_append : 'a array -> 'a array -> 'a array
+val array_fold : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+val array_get : 'a array -> int -> 'a
+val array_length : 'a array -> int
+val array_make : int -> 'a -> 'a array
+val array_map : ('a -> 'b) -> 'a array -> 'b array
+val array_set : 'a array -> int -> 'a -> unit

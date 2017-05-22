@@ -1,4 +1,5 @@
 type position = {
+  file : string ; [@f file]
   line : int ; [@f line]
   column : int [@f column]
 }
@@ -13,11 +14,11 @@ type 'a located = {
   value : 'a [@f value]
 }
 
-let new_position line column = { line = line ; column = column }
+let new_position file line column = { file = file ; line = line ; column = column }
 let new_location start stop = { start = start ; stop = stop }
 let new_located_value loc value = { loc = loc ; value = value }
 
-let dummy_position = { line = 0 ; column = 0 }
+let dummy_position = { file = "dummy.ml" ; line = 0 ; column = 0 }
 let dummy_location = { start = dummy_position ; stop = dummy_position }
 
 type constant =
@@ -36,7 +37,7 @@ type expression =
 | Expression_constant of constant located [@f constant]
 | Expression_ident of string located [@f id]
 | Expression_let of bool * pattern located * expression located * expression located [@f is_rec, id, e1, e2]
-| Expression_tuple of expression located list [@f components]
+| Expression_tuple of expression located array [@f components]
 
 and pattern =
 | Pattern_any of location [@f loc]

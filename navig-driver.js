@@ -1434,6 +1434,7 @@ function run() {
  try {
     // JsInterpreter.run_javascript(program);
     CalcInterpreter.eval_expr(program);
+    // MLInterpreteur.run_expression(program);
  } catch (e) {
    success = false;
    // alert("Error during the run");
@@ -1454,6 +1455,7 @@ function run() {
 
 function parseSource(source, name, readOnly) {
   var tree = CalcParserLib.parseExpr(name, source);
+  // var tree = MLExplain.parseExpr(name, source);
   //var tree = esprimaToAST(esprima.parse(source, {loc: true, range: true}), source, name);
   newSourceDoc(name, source, readOnly);
   return tree;
