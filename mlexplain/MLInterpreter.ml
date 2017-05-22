@@ -96,36 +96,36 @@ let run_constant = function
 | Constant_string s -> Value_string s
 
 let rec run_expression ctx _term_ = match _term_ with
-| Expression_constant c -> Some (run_constant c.value)
-| Expression_ident id ->
+| Expression_constant (_, c) -> Some (run_constant c)
+| Expression_ident (_, id) ->
   begin
-    match Map.find id.value ctx with
+    match Map.find id ctx with
     | None -> None
     | Some v -> Some v
   end
-| Expression_let (_, patt, e1, e2) ->
+| Expression_let (_, _, patt, e1, e2) ->
   begin
-    match pattern_match ctx e1.value patt.value with
-    | Some ctx' -> run_expression ctx' e2.value
+    match pattern_match ctx e1 patt with
+    | Some ctx' -> run_expression ctx' e2
     | None -> None
   end
-| Expression_tuple tuple ->
-  let value_opts = array_map (fun e -> run_expression ctx e.value) tuple in
+| Expression_tuple (_, tuple) ->
+  let value_opts = array_map (fun e -> run_expression ctx e) tuple in
   match lift_option value_opts with
   | None -> None
   | Some t -> Some (Value_tuple t)
 
-and pattern_match ctx expr patt = match patt with
+and pattern_match ctx expr _term_ = match _term_ with
 | Pattern_any _ -> Some ctx
-| Pattern_var id ->
+| Pattern_var (_, id) ->
   begin
     match run_expression ctx expr with
-    | Some v -> Some (Map.add id.value v ctx)
+    | Some v -> Some (Map.add id v ctx)
     | None -> None
   end
-| Pattern_constant c ->
+| Pattern_constant (_, c) ->
   begin
-    let v1 = run_constant c.value in
+    let v1 = run_constant c in
     match run_expression ctx expr with
     | None -> None
     | Some v2 -> if value_eq v1 v2 then Some ctx else None

@@ -75,39 +75,11 @@ var initialSourceName = "";
 // Initial source code
 
 var source_files = [
-  // '',
-  /*'var x = 1;\nx++;\nx',
-  'var x = { a : { c : 1 } };\nx.a.b = 2;\nx.a.x = x;\nx',
-  'var t = [];\nfor (var i = 0; i < 3; i++) {\n  t[i] = function() { return i; } \n};\nt[0](); ',
-  'var t = [];\nfor (var i = 0; i < 3; i++) {\n  t[i] = (function(j) {\n      return function() { return j; }; \n    })(i); \n};\nt[0](); ',
-  '2+3',
-  'var x = 2+"foo"',
-  '(+{}+[])[+!![]]',
-  'var f = function() {return "f"}; eval("var g = function() {return \\"g\\"}; eval(\\"var h = function() {return \\\\\\"h\\\\\\"}; f(); g(); h()\\"); h();"); g(); h(); f();',
-  '(function (x) {return arguments;})(3)',
-  'var s = "val(\\"++x\\")";\neval("x=0; e" + s)',
-  'var x = 2;\nx',
-  '"use strict";\nvar x = 1;\ nx++;\nx',
-  '{} + {}',
-  'x = [1]',  
-  'throw 3',
-  'var x = { a : 1, b : 2 }; ',
-  'var x = { a : 1 };\n x.b = 2;\nx',
-  'var x = { a : { c: 1 } };\n x.a.b = 2;\nx',
-  '(function (x) {return 1;})()',
-  '(function (x) {\nreturn 1;\n})({a:{b:2}})',
-  'eval("var x = { a : 1 };\\nx.b = 2;\\nx");',
-  'var t = {};\nfor (var i = 0; i < 3; i++) {\n  t[i] = eval("i + " + i); \n};\nt; ',
-  'function f() {\n   var x = 2;\n   function g() { var x = 3; return x; };\n   return g(); \n};\nf()',
-  '(2 < 3) && ((3 > 5) || (true || x.f))',
-  '2+2',
-  'f()',
-  '2 === 2',*/
   '43',
-  '5.0 + 4.5',
-  '32 / 2',
-  '5 * 6 + 10.2',
-  '43 + 4 / 0'
+  'let x = 2 in x',
+  'let _ = "no" in 65',
+  'let y = (43, "hehe") in (y, y)',
+  'let x = 12 in let y = 43.78 in (y, x)'
 ];
 
 source_files.reduce((select, file_content) => {
@@ -120,7 +92,7 @@ source_files.reduce((select, file_content) => {
 
 function initSourceDocs() {
   source_docs = {};
-  Translate_syntax.eval_counter = 0;
+  // Translate_syntax.eval_counter = 0;
   $('#source_tabs').empty();
 }
 
@@ -847,14 +819,6 @@ function show_object(state, loc, target, depth) {
           // TODO: complete
 
           break;
-        case "Literal_int":
-        case "Literal_float":
-        case "Right":
-        case "Left":
-        case "Binary_op_add":
-        case "Binary_op_sub":
-        case "Binary_op_mul":
-        case "Binary_op_div":
         case "Coq_value_prim":
         case "Coq_value_object":
           show_value(state, attribute, targetsub, depth-1);
@@ -888,32 +852,6 @@ function show_object(state, loc, target, depth) {
 function show_value(state, v, target, depth) {
   var t = $("#" + target);
   switch (v.tag) {
-  case "Right":
-    var s = "Right " + v.value.value;
-    t.append(s);
-    return;
-  case "Left":
-    var loc = "(" + v.err.loc.start.line + ", " + v.err.loc.start.column + ")"
-    var s = "Left " + v.err.value + " at " + loc;
-    t.append(s);
-    return;
-  case "Literal_int":
-  case "Literal_float":
-    var s = v.value;
-    t.append(s);
-    return;
-  case "Binary_op_add":
-    t.append("Binary operator +");
-    return;
-  case "Binary_op_sub":
-    t.append("Binary operator -");
-    return;
-  case "Binary_op_mul":
-    t.append("Binary operator *");
-    return;
-  case "Binary_op_div":
-    t.append("Binary operator /");
-    return;
   case "Coq_value_prim":
     var s = string_of_prim(v.value);
     t.append(s);
@@ -1059,8 +997,7 @@ function interp_val_is_js_prim(v) {
 }
 
 function interp_val_is_js_value(v) {
-  // return has_tag_in_set(v, ["Coq_value_prim", "Coq_value_object" ]);
-  return has_tag_in_set(v, ["Literal_int", "Literal_float", "Right", "Left", "Binary_op_add", "Binary_op_sub", "Binary_op_mul", "Binary_op_div"]);
+  return has_tag_in_set(v, ["Coq_value_prim", "Coq_value_object" ]);
 }
 
 function interp_val_is_loc(v) {
@@ -1072,8 +1009,9 @@ function interp_val_is_list(v) {
 }
   
 function interp_val_is_syntax(v) {
-  // return has_tag_in_set(v, [ "Coq_expr_this", "Coq_expr_identifier", "Coq_expr_literal", "Coq_expr_object", "Coq_expr_array", "Coq_expr_function", "Coq_expr_access", "Coq_expr_member", "Coq_expr_new", "Coq_expr_call", "Coq_expr_unary_op", "Coq_expr_binary_op", "Coq_expr_conditional", "Coq_expr_assign", "Coq_propbody_val", "Coq_propbody_get", "Coq_propbody_set", "Coq_funcbody_intro", "Coq_stat_expr", "Coq_stat_label", "Coq_stat_block", "Coq_stat_var_decl", "Coq_stat_if", "Coq_stat_do_while", "Coq_stat_while", "Coq_stat_with", "Coq_stat_throw", "Coq_stat_return", "Coq_stat_break", "Coq_stat_continue", "Coq_stat_try", "Coq_stat_for", "Coq_stat_for_var", "Coq_stat_for_in", "Coq_stat_for_in_var", "Coq_stat_debugger", "Coq_stat_switch", "Coq_switchbody_nodefault", "Coq_switchbody_withdefault", "Coq_switchclause_intro", "Coq_prog_intro", "Coq_element_stat", "Coq_element_func_decl" ]);
-  return has_tag_in_set(v, ["Expr_binary_op", "Expr_unary_op", "Expr_literal"]);
+  return has_tag_in_set(v, ["Expression_constant", "Expression_ident", "Expression_let", "Expression_tuple",
+    "Constant_integer", "Constant_float", "Constant_char", "Constant_string",
+    "Pattern_any", "Pattern_constant", "Pattern_var"]);
 }
 
 function interp_val_is_state(v) {
@@ -1258,7 +1196,6 @@ function updateSelection() {
      console.log("Error: missing line in log event");
 
    } else {
-
      // source panel
      source_loc_selected = item.source_loc;
 
@@ -1425,7 +1362,8 @@ function assignExtraInfosInTrace() {
 function runDebug() {
   reset_datalog();
   // JsInterpreter.run_javascript(program);
-  CalcInterpreter.eval_expr(program);
+  // CalcInterpreter.eval_expr(program);
+  MLInterpreter.run_expression(Map.empty_map(function(a,b) { return a === b; }), program);
 }
 
 function run() {
@@ -1433,8 +1371,8 @@ function run() {
  var success = true;
  try {
     // JsInterpreter.run_javascript(program);
-    CalcInterpreter.eval_expr(program);
-    // MLInterpreteur.run_expression(program);
+    // CalcInterpreter.eval_expr(program);
+    MLInterpreter.run_expression(Map.empty_map(function(a,b) { return a === b; }), program);
  } catch (e) {
    success = false;
    // alert("Error during the run");
@@ -1454,8 +1392,8 @@ function run() {
 }
 
 function parseSource(source, name, readOnly) {
-  var tree = CalcParserLib.parseExpr(name, source);
-  // var tree = MLExplain.parseExpr(name, source);
+  // var tree = CalcParserLib.parseExpr(name, source);
+  var tree = MLExplain.parseExpr(name, source);
   //var tree = esprimaToAST(esprima.parse(source, {loc: true, range: true}), source, name);
   newSourceDoc(name, source, readOnly);
   return tree;
@@ -1482,7 +1420,7 @@ function readSourceParseAndRun() {
 
 // interpreter file displayed initially
 // -- viewFile(tracer_files[0].file);
-viewFile("CalcInterpreter.ml");
+viewFile("MLInterpreter.ml");
 
 //$timeout(function() {codeMirror.refresh();});
 
