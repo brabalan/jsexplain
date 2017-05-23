@@ -38,11 +38,21 @@ type expression =
 | Expression_ident of location * string [@f loc, id]
 | Expression_let of location * bool * pattern * expression * expression [@f loc, is_rec, id, e1, e2]
 | Expression_tuple of location * expression array [@f loc, components]
+| Expression_fun of location * pattern * expression [@f loc, patt, expr]
+| Expression_function of location * case array [@f loc, cases]
+| Expression_apply of location * expression * expression array [@f loc, func, args]
+| Expression_match of location * expression * case array [@f loc, expr, cases]
 
 and pattern =
 | Pattern_any of location [@f loc]
 | Pattern_var of location * string [@f loc, id]
 | Pattern_constant of location * constant [@f loc, constant]
+| Pattern_tuple of location * pattern array [@f loc, patts]
+
+and case = {
+  patt : pattern ;
+  expr : expression
+}
 
 (* type constructor = string
 

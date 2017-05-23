@@ -149,6 +149,8 @@ let strget s n =
   with
     Invalid_argument _ -> None
 
+let normalize_string s = s ;;
+
 (**{6 List library }*)
 let rev lst =
   let rec aux acc = function

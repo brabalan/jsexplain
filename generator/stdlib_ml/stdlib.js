@@ -183,6 +183,10 @@ var substring = function(n, m, s) {
   return s.slice(n, n+m);
 };
 
+var normalize_string = function(s) {
+  return s.toString();
+}
+
 var array_append = function(a, b) {
   if (typeof(a) != "object" || typeof(b) != "object")
     throw "array_length invalid arguments";

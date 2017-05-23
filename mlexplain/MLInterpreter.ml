@@ -6,6 +6,7 @@ type value =
 | Value_char of char [@f value]
 | Value_string of string [@f value]
 | Value_tuple of value array [@f value]
+| Value_fun of (value -> value option) [@f value]
 
 let rev lst =
   let rec aux acc lst = match lst with
@@ -13,6 +14,15 @@ let rev lst =
   | h::t -> aux (h::acc) t
 
   in aux [] lst
+
+let list_of_array ary =
+  let len = array_length ary in
+  let rec for_loop i =
+    if i === len then
+      []
+    else
+      array_get ary i :: for_loop (i+1)
+  in for_loop 0
 
 let map f lst =
   let rec aux acc lst = match lst with
@@ -86,6 +96,7 @@ let rec value_eq v1 v2 = match v1 with
       all_true blist
     | _ -> false
   end
+| Value_fun _ -> false
 
 type environment = (string, value) Map.map
 
@@ -93,7 +104,7 @@ let run_constant = function
 | Constant_integer i -> Value_int i
 | Constant_float f -> Value_float f
 | Constant_char c -> Value_char c
-| Constant_string s -> Value_string s
+| Constant_string s -> Value_string (normalize_string s)
 
 let rec run_expression ctx _term_ = match _term_ with
 | Expression_constant (_, c) -> Some (run_constant c)
@@ -105,28 +116,84 @@ let rec run_expression ctx _term_ = match _term_ with
   end
 | Expression_let (_, _, patt, e1, e2) ->
   begin
-    match pattern_match ctx e1 patt with
-    | Some ctx' -> run_expression ctx' e2
+    match run_expression ctx e1 with
     | None -> None
+    | Some v ->
+      match pattern_match ctx v patt with
+      | Some ctx' -> run_expression ctx' e2
+      | None -> None
+  end
+| Expression_fun (_, patt, expr) ->
+  Some (Value_fun (fun value ->
+    match pattern_match ctx value patt with
+    | None -> None
+    | Some ctx' -> run_expression ctx' expr))
+| Expression_function (_, cases) ->
+  Some (Value_fun (fun value ->
+    pattern_match_many ctx value (list_of_array cases)))
+| Expression_apply (_, fe, argse) ->
+  let rec run_apply func args =
+    match args with
+    | [] -> Some func
+    | x::xs ->
+      match func with
+      | Value_fun f ->
+        begin
+          match run_expression ctx x with
+          | None -> None
+          | Some v ->
+            match f v with
+            | None -> None
+            | Some res -> run_apply res xs
+        end
+      | _ -> None
+  in begin
+    match run_expression ctx fe with
+    | None -> None
+    | Some func -> run_apply func (list_of_array argse)
   end
 | Expression_tuple (_, tuple) ->
   let value_opts = array_map (fun e -> run_expression ctx e) tuple in
-  match lift_option value_opts with
-  | None -> None
-  | Some t -> Some (Value_tuple t)
+  begin
+    match lift_option value_opts with
+    | None -> None
+    | Some t -> Some (Value_tuple t)
+  end
+| Expression_match (loc, expr, cases) ->
+  let func = Expression_function (loc, cases) in
+  let app = Expression_apply (loc, func, [| expr |]) in
+  run_expression ctx app
 
-and pattern_match ctx expr _term_ = match _term_ with
+and pattern_match ctx value _term_ = match _term_ with
 | Pattern_any _ -> Some ctx
-| Pattern_var (_, id) ->
-  begin
-    match run_expression ctx expr with
-    | Some v -> Some (Map.add id v ctx)
-    | None -> None
-  end
+| Pattern_var (_, id) -> Some (Map.add id value ctx)
 | Pattern_constant (_, c) ->
-  begin
-    let v1 = run_constant c in
-    match run_expression ctx expr with
-    | None -> None
-    | Some v2 -> if value_eq v1 v2 then Some ctx else None
-  end
+  let v1 = run_constant c in
+    if value_eq v1 value then Some ctx else None
+| Pattern_tuple (_, patts) ->
+  match value with
+  | Value_tuple tuples ->
+    let len = array_length patts in
+    let vallen = array_length tuples in
+    if len === vallen then
+      let rec for_loop ctx_opt i =
+        if i === len then
+          ctx_opt
+        else
+          match ctx_opt with
+          | None -> None
+          | Some ctx ->
+            let vali = (array_get tuples i) in
+            let patti = (array_get patts i) in
+            for_loop (pattern_match ctx vali patti) (i+1)
+      in for_loop (Some ctx) 0
+    else
+      None
+  | _ -> None
+
+and pattern_match_many ctx value cases = match cases with
+| [] -> None
+| x::xs ->
+  match pattern_match ctx value x.patt with
+  | None -> pattern_match_many ctx value xs
+  | Some ctx' -> run_expression ctx' x.expr

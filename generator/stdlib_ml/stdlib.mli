@@ -181,6 +181,7 @@ val strlength : string -> int (* in JS :  function (x) { return x.length; } *)
 val substring : int -> int -> string -> string  (* function(x) { return x.slice(n, n+m); } *)
 val strget : string -> int -> char option
 
+val normalize_string : string -> string
 
 (**{6 List library}*)
 val rev : 'a list -> 'a list

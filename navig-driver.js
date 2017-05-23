@@ -1010,6 +1010,7 @@ function interp_val_is_list(v) {
   
 function interp_val_is_syntax(v) {
   return has_tag_in_set(v, ["Expression_constant", "Expression_ident", "Expression_let", "Expression_tuple",
+    "Expression_function", "Expression_fun", "Expression_apply",
     "Constant_integer", "Constant_float", "Constant_char", "Constant_string",
     "Pattern_any", "Pattern_constant", "Pattern_var"]);
 }
