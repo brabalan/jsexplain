@@ -11,23 +11,20 @@ type value =
 let rev lst =
   let rec aux acc lst = match lst with
   | [] -> acc
-  | h::t -> aux (h::acc) t
+  | h :: t -> aux (h :: acc) t
 
   in aux [] lst
 
 let list_of_array ary =
   let len = array_length ary in
   let rec for_loop i =
-    if i === len then
-      []
-    else
-      array_get ary i :: for_loop (i+1)
+    if i === len then [] else array_get ary i :: for_loop (i + 1)
   in for_loop 0
 
 let map f lst =
   let rec aux acc lst = match lst with
   | [] -> rev acc
-  | h::t -> aux (f h :: acc) t
+  | h :: t -> aux (f h :: acc) t
 
   in aux [] lst
 
@@ -38,17 +35,20 @@ let all_true ary =
 let min a b = if a <= b then a else b
 
 let zipwith f a1 a2 =
-  let min_size = int_of_number (min (number_of_int (array_length a1)) (number_of_int (array_length a2))) in
+  let flen_a1 = number_of_int (array_length a1) in
+  let flen_a2 = number_of_int (array_length a2) in
+  let min_size = int_of_number (min flen_a1 flen_a2) in
   let res = array_make min_size (f (array_get a1 0) (array_get a2 0)) in
   let rec for_loop i =
     if (number_of_int i) < (number_of_int min_size) then
     begin
-      array_set res i (f (array_get a1 i) (array_get a2 i)) ;
-      for_loop (i+1)
+      let res_f = f (array_get a1 i) (array_get a2 i) in
+      array_set res i res_f ;
+      for_loop (i + 1)
     end
     else
-      res
-  in for_loop 1
+      res in
+  for_loop 1
 
 let lift_option ary =
   let f ary_opt opt = match ary_opt with
@@ -59,7 +59,6 @@ let lift_option ary =
       | None -> None
       | Some v -> Some (array_append ary (array_make 1 v))
     end
-
   in array_fold f (Some [| |]) ary
 
 
@@ -129,23 +128,21 @@ let rec run_expression ctx _term_ = match _term_ with
     | None -> None
     | Some ctx' -> run_expression ctx' expr))
 | Expression_function (_, cases) ->
-  Some (Value_fun (fun value ->
-    pattern_match_many ctx value (list_of_array cases)))
+  let func value = pattern_match_many ctx value (list_of_array cases) in
+  Some (Value_fun func)
 | Expression_apply (_, fe, argse) ->
   let rec run_apply func args =
+    let apply_fun func ctx arg args = match run_expression ctx arg with
+    | None -> None
+    | Some v ->
+      match func v with
+      | None -> None
+      | Some res -> run_apply res args in
     match args with
     | [] -> Some func
-    | x::xs ->
+    | x :: xs ->
       match func with
-      | Value_fun f ->
-        begin
-          match run_expression ctx x with
-          | None -> None
-          | Some v ->
-            match f v with
-            | None -> None
-            | Some res -> run_apply res xs
-        end
+      | Value_fun f -> apply_fun f ctx x xs
       | _ -> None
   in begin
     match run_expression ctx fe with
@@ -169,31 +166,31 @@ and pattern_match ctx value _term_ = match _term_ with
 | Pattern_var (_, id) -> Some (Map.add id value ctx)
 | Pattern_constant (_, c) ->
   let v1 = run_constant c in
-    if value_eq v1 value then Some ctx else None
+  if value_eq v1 value then Some ctx else None
 | Pattern_tuple (_, patts) ->
   match value with
   | Value_tuple tuples ->
     let len = array_length patts in
     let vallen = array_length tuples in
+    let rec for_loop ctx_opt i =
+      if i === len then
+        ctx_opt
+      else
+        match ctx_opt with
+        | None -> None
+        | Some ctx ->
+          let vali = (array_get tuples i) in
+          let patti = (array_get patts i) in
+          for_loop (pattern_match ctx vali patti) (i + 1) in
     if len === vallen then
-      let rec for_loop ctx_opt i =
-        if i === len then
-          ctx_opt
-        else
-          match ctx_opt with
-          | None -> None
-          | Some ctx ->
-            let vali = (array_get tuples i) in
-            let patti = (array_get patts i) in
-            for_loop (pattern_match ctx vali patti) (i+1)
-      in for_loop (Some ctx) 0
+     for_loop (Some ctx) 0
     else
       None
   | _ -> None
 
 and pattern_match_many ctx value cases = match cases with
 | [] -> None
-| x::xs ->
+| x :: xs ->
   match pattern_match ctx value x.patt with
   | None -> pattern_match_many ctx value xs
   | Some ctx' -> run_expression ctx' x.expr

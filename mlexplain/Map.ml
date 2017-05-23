@@ -18,7 +18,7 @@ let add key value m = { m with bindings = { key = key ; value = value } :: m.bin
 
 let rec find key m = match m.bindings with
 | [] -> None
-| h::t ->
+| h :: t ->
   if m.eq h.key key then
     Some h.value
   else
@@ -26,4 +26,4 @@ let rec find key m = match m.bindings with
 
 let rec mem key = function
 | [] -> false
-| h::t -> key = h.key || mem key t
+| h :: t -> key = h.key || mem key t

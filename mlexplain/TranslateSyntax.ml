@@ -26,58 +26,60 @@ let translate_constant = function
 | Pconst_char c -> Constant_char c
 | Pconst_string (s, _) -> Constant_string s
 
-let rec translate_expression file e = match e.pexp_desc with
-| Pexp_constant pc ->
-  let c = translate_constant pc in
-  Expression_constant ((translate_location file e.pexp_loc), c)
-| Pexp_ident li ->
-  let loc = translate_location file li.loc in
-  let id = Longident.last (li.txt) in
-  Expression_ident (loc, id)
-| Pexp_let (ir, [binding], exp) ->
-  let is_rec = (ir = Recursive) in
-  let patt = translate_pattern file binding.pvb_pat in
-  let val_exp = translate_expression file binding.pvb_expr in
-  let expr = translate_expression file exp in
-  Expression_let (translate_location file e.pexp_loc, is_rec, patt, val_exp, expr)
-| Pexp_fun (_, _, p, e) ->
-  let patt = translate_pattern file p in
-  let expr = translate_expression file e in
-  Expression_fun (translate_location file e.pexp_loc, patt, expr)
-| Pexp_function cases ->
-  Expression_function
-    (translate_location file e.pexp_loc,
-      Array.of_list (List.map (fun case -> {
-        patt = translate_pattern file case.pc_lhs ;
-        expr = translate_expression file case.pc_rhs
-      }) cases))
-| Pexp_apply (pfunc, pargs) ->
-  let func = translate_expression file pfunc in
-  let args = List.map (fun (_, pe) -> translate_expression file pe) pargs in
-  Expression_apply (translate_location file e.pexp_loc, func, Array.of_list args)
-| Pexp_tuple pel ->
-  let el = List.map (fun pe -> translate_expression file pe) pel in
-  Expression_tuple (translate_location file e.pexp_loc, Array.of_list el)
-| Pexp_match (pexp, pcases) ->
-  let cases = Array.of_list (List.map (fun case -> {
+let rec translate_expression file e =
+  let loc = translate_location file e.pexp_loc in
+  match e.pexp_desc with
+  | Pexp_constant pc ->
+    let c = translate_constant pc in
+    Expression_constant (loc, c)
+  | Pexp_ident li ->
+    let id = Longident.last (li.txt) in
+    Expression_ident (loc, id)
+  | Pexp_let (ir, [binding], exp) ->
+    let is_rec = (ir = Recursive) in
+    let patt = translate_pattern file binding.pvb_pat in
+    let val_exp = translate_expression file binding.pvb_expr in
+    let expr = translate_expression file exp in
+    Expression_let (loc, is_rec, patt, val_exp, expr)
+  | Pexp_fun (_, _, p, e) ->
+    let patt = translate_pattern file p in
+    let expr = translate_expression file e in
+    Expression_fun (loc, patt, expr)
+  | Pexp_function cases ->
+    let map_f case = {
       patt = translate_pattern file case.pc_lhs ;
       expr = translate_expression file case.pc_rhs
-    }) pcases) in
-  let loc = translate_location file e.pexp_loc in
-  let expr = translate_expression file pexp in
-  Expression_match (loc, expr, cases)
+    } in
+    let case_array = Array.of_list (List.map map_f cases) in
+    Expression_function (loc, case_array)
+  | Pexp_apply (pfunc, pargs) ->
+    let func = translate_expression file pfunc in
+    let args = List.map (fun (_, pe) -> translate_expression file pe) pargs in
+    Expression_apply (loc, func, Array.of_list args)
+  | Pexp_tuple pel ->
+    let el = List.map (fun pe -> translate_expression file pe) pel in
+    Expression_tuple (loc, Array.of_list el)
+  | Pexp_match (pexp, pcases) ->
+    let map_f case = {
+      patt = translate_pattern file case.pc_lhs ;
+      expr = translate_expression file case.pc_rhs
+    } in
+    let cases = Array.of_list (List.map map_f pcases) in
+    let expr = translate_expression file pexp in
+    Expression_match (loc, expr, cases)
 
-and translate_pattern file p = match p.ppat_desc with
-| Ppat_any -> Pattern_any (translate_location file p.ppat_loc)
-| Ppat_constant c -> Pattern_constant (translate_location file p.ppat_loc, translate_constant c)
-| Ppat_var li ->
-  let loc = translate_location file li.loc in
-  let id = li.txt in
-  Pattern_var (loc, id)
-| Ppat_tuple ppatts ->
+and translate_pattern file p =
   let loc = translate_location file p.ppat_loc in
-  let patts = Array.of_list (List.map (translate_pattern file) ppatts) in
-  Pattern_tuple (loc, patts)
+  match p.ppat_desc with
+  | Ppat_any -> Pattern_any loc
+  | Ppat_constant c -> Pattern_constant (loc, translate_constant c)
+  | Ppat_var li ->
+    let id = li.txt in
+    Pattern_var (loc, id)
+  | Ppat_tuple ppatts ->
+    let patt_list = List.map (translate_pattern file) ppatts in
+    let patts = Array.of_list patt_list in
+    Pattern_tuple (loc, patts)
 
 (***************************************************************************************
  * Translation from an OCaml-side AST to a JS-side one
