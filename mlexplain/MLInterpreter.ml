@@ -30,11 +30,14 @@ let zipwith f a1 a2 =
       res in
   for_loop 1
 
+(** val lift_option : 'a option array -> 'a array option *)
 let lift_option ary =
   let f ary_opt opt =
     Option.bind ary_opt (fun ary ->
       Option.bind opt (fun v ->
         Some (array_append ary (array_make 1 v))))
+  (* If the array contains no None value, the resulting value is Some A,
+   * with A being an array containing input-array inner values *)
   in array_fold f (Some [| |]) ary
 
 let rec value_eq v1 v2 = match v1 with
@@ -84,10 +87,13 @@ let rec run_expression ctx _term_ = match _term_ with
 | Expression_constant (_, c) -> Some (run_constant c)
 | Expression_ident (_, id) -> Map.find id ctx
 | Expression_let (_, _, patt, e1, e2) ->
+  (* Some v = run_expression ctx e1
+   * Some ctx' = pattern_match ctx v patt *)
   Option.bind (run_expression ctx e1) (fun v ->
     Option.bind (pattern_match ctx v patt) (fun ctx' ->
       run_expression ctx' e2))
 | Expression_fun (_, patt, expr) ->
+  (* Some ctx' = pattern_match ctx value patt *)
   let f value = Option.bind (pattern_match ctx value patt) (fun ctx' -> run_expression ctx' expr) in
   Some (Value_fun f)
 | Expression_function (_, cases) ->
@@ -95,20 +101,26 @@ let rec run_expression ctx _term_ = match _term_ with
   Some (Value_fun func)
 | Expression_apply (_, fe, argse) ->
   let rec apply_fun func ctx arg args =
+    (* Some v = run_expression ctx arg
+     * Some res = func v *)
     Option.bind (run_expression ctx arg) (fun v ->
       Option.bind (func v) (fun res -> run_apply res args))
   and run_apply func args =
     match args with
+    (* No argument means a value to return *)
     | [] -> Some func
+    (* Having arguments means that we have to apply a function to them *)
     | x :: xs ->
       match func with
       | Value_fun f -> apply_fun f ctx x xs
       | _ -> None in
 
+    (* Some func = run_expression ctx fe *)
     Option.bind (run_expression ctx fe) (fun func ->
       run_apply func (MLList.of_array argse))
 | Expression_tuple (_, tuple) ->
   let value_opts = array_map (fun e -> run_expression ctx e) tuple in
+  (* Some t = lift_option value_opts *)
   Option.bind (lift_option value_opts) (fun t -> Some (Value_tuple t))
 | Expression_match (loc, expr, cases) ->
   let func = Expression_function (loc, cases) in
@@ -126,14 +138,19 @@ and pattern_match ctx value _term_ = match _term_ with
   | Value_tuple tuples ->
     let len = array_length patts in
     let vallen = array_length tuples in
+
+    (* For each i in 0 to len,
+     * the value i is matched with the pattern i to populate the new environment *)
     let rec for_loop ctx_opt i =
       if i === len then
+        (* terminal case, the resulting environment is returned *)
         ctx_opt
       else
         let some_case_func ctx =
           let vali = (array_get tuples i) in
           let patti = (array_get patts i) in
           for_loop (pattern_match ctx vali patti) (i + 1) in
+        (* Some ctx = ctx_opt *)
         Option.bind ctx_opt some_case_func in
 
     if len === vallen then
