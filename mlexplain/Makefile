@@ -30,8 +30,10 @@ STDLIB_FLAG := -I $(STDLIB_DIR) -open Stdlib
 REPLACE_STDLIB := -nopervasives -nostdlib $(STDLIB_FLAG)
 
 ASSEMBLY_JS_FILES := \
-	MLSyntax.unlog.js \
+	Option.unlog.js \
+	MLList.unlog.js \
 	Map.unlog.js \
+	MLSyntax.unlog.js \
 	MLInterpreter.log.js
 
 ASSEMBLY_JS := \
@@ -43,6 +45,9 @@ DISPLAYED := \
 
 ALL_DISPLAYED := $(DISPLAYED:.ml=.unlog.js) $(DISPLAYED:.ml=.pseudo.js) $(DISPLAYED)
 ALL_LINEOF := $(DISPLAYED:.ml=.token.js) $(DISPLAYED:.ml=.mlloc.js) $(DISPLAYED:.ml=.ptoken.js)
+
+%.cmi: %.mli
+	ocamlc $(REPLACE_STDLIB) $<
 
 %.cmi: %.ml $(MLTOJS_BIN)
 	$(MLTOJS) -mode cmi -I $(STDLIB_DIR) $<

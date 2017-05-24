@@ -8,26 +8,6 @@ type value =
 | Value_tuple of value array [@f value]
 | Value_fun of (value -> value option) [@f value]
 
-let rev lst =
-  let rec aux acc lst = match lst with
-  | [] -> acc
-  | h :: t -> aux (h :: acc) t
-
-  in aux [] lst
-
-let list_of_array ary =
-  let len = array_length ary in
-  let rec for_loop i =
-    if i === len then [] else array_get ary i :: for_loop (i + 1)
-  in for_loop 0
-
-let map f lst =
-  let rec aux acc lst = match lst with
-  | [] -> rev acc
-  | h :: t -> aux (f h :: acc) t
-
-  in aux [] lst
-
 let all_true ary =
   let f cur b = cur && b in
   array_fold f true ary
@@ -51,16 +31,11 @@ let zipwith f a1 a2 =
   for_loop 1
 
 let lift_option ary =
-  let f ary_opt opt = match ary_opt with
-  | None -> None
-  | Some ary ->
-    begin
-      match opt with
-      | None -> None
-      | Some v -> Some (array_append ary (array_make 1 v))
-    end
+  let f ary_opt opt =
+    Option.bind ary_opt (fun ary ->
+      Option.bind opt (fun v ->
+        Some (array_append ary (array_make 1 v))))
   in array_fold f (Some [| |]) ary
-
 
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
@@ -107,55 +82,34 @@ let run_constant = function
 
 let rec run_expression ctx _term_ = match _term_ with
 | Expression_constant (_, c) -> Some (run_constant c)
-| Expression_ident (_, id) ->
-  begin
-    match Map.find id ctx with
-    | None -> None
-    | Some v -> Some v
-  end
+| Expression_ident (_, id) -> Map.find id ctx
 | Expression_let (_, _, patt, e1, e2) ->
-  begin
-    match run_expression ctx e1 with
-    | None -> None
-    | Some v ->
-      match pattern_match ctx v patt with
-      | Some ctx' -> run_expression ctx' e2
-      | None -> None
-  end
+  Option.bind (run_expression ctx e1) (fun v ->
+    Option.bind (pattern_match ctx v patt) (fun ctx' ->
+      run_expression ctx' e2))
 | Expression_fun (_, patt, expr) ->
-  Some (Value_fun (fun value ->
-    match pattern_match ctx value patt with
-    | None -> None
-    | Some ctx' -> run_expression ctx' expr))
+  let f value = Option.bind (pattern_match ctx value patt) (fun ctx' -> run_expression ctx' expr) in
+  Some (Value_fun f)
 | Expression_function (_, cases) ->
-  let func value = pattern_match_many ctx value (list_of_array cases) in
+  let func value = pattern_match_many ctx value (MLList.of_array cases) in
   Some (Value_fun func)
 | Expression_apply (_, fe, argse) ->
-  let rec run_apply func args =
-    let apply_fun func ctx arg args = match run_expression ctx arg with
-    | None -> None
-    | Some v ->
-      match func v with
-      | None -> None
-      | Some res -> run_apply res args in
+  let rec apply_fun func ctx arg args =
+    Option.bind (run_expression ctx arg) (fun v ->
+      Option.bind (func v) (fun res -> run_apply res args))
+  and run_apply func args =
     match args with
     | [] -> Some func
     | x :: xs ->
       match func with
       | Value_fun f -> apply_fun f ctx x xs
-      | _ -> None
-  in begin
-    match run_expression ctx fe with
-    | None -> None
-    | Some func -> run_apply func (list_of_array argse)
-  end
+      | _ -> None in
+
+    Option.bind (run_expression ctx fe) (fun func ->
+      run_apply func (MLList.of_array argse))
 | Expression_tuple (_, tuple) ->
   let value_opts = array_map (fun e -> run_expression ctx e) tuple in
-  begin
-    match lift_option value_opts with
-    | None -> None
-    | Some t -> Some (Value_tuple t)
-  end
+  Option.bind (lift_option value_opts) (fun t -> Some (Value_tuple t))
 | Expression_match (loc, expr, cases) ->
   let func = Expression_function (loc, cases) in
   let app = Expression_apply (loc, func, [| expr |]) in
@@ -176,12 +130,12 @@ and pattern_match ctx value _term_ = match _term_ with
       if i === len then
         ctx_opt
       else
-        match ctx_opt with
-        | None -> None
-        | Some ctx ->
+        let some_case_func ctx =
           let vali = (array_get tuples i) in
           let patti = (array_get patts i) in
           for_loop (pattern_match ctx vali patti) (i + 1) in
+        Option.bind ctx_opt some_case_func in
+
     if len === vallen then
      for_loop (Some ctx) 0
     else
