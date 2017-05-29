@@ -51,3 +51,8 @@ let rec zipwith f l1 l2 =
 let rec all_true lst = match lst with
 | [] -> true
 | h :: t -> h && all_true t
+
+(** Check if the given value relates to one in the list according to the predicate *)
+let rec any pred v lst = match lst with
+| [] -> false
+| h :: t -> pred h v || any pred v t

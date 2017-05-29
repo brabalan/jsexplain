@@ -46,6 +46,8 @@ val ( - ) : int -> int -> int
 val ( * ) : int -> int -> int
 val ( / ) : int -> int -> int
 
+val min : int -> int -> int
+
 (**{6 Floating-point arithmetic }*)
 val ( +. ) : float -> float -> float
 val ( -. ) : float -> float -> float

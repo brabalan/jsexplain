@@ -25,6 +25,8 @@ let ( - ) = Pervasives.( - );;
 let ( * ) = Pervasives.( * );;
 let ( / ) = Pervasives.( / );;
 
+let min = Pervasives.min ;;
+
 (**{6 Floating-point arithmetic }*)
 let ( +. ) = Pervasives.( +. );;
 let ( -. ) = Pervasives.( -. );;

@@ -10,45 +10,7 @@ type value =
 | Value_array of value array [@f value]
 | Value_fun of (value -> value option) [@f value]
 
-let all_true ary =
-  let f cur b = cur && b in
-  array_fold f true ary
-
 let min a b = if a <= b then a else b
-
-(* Create a new array zipping both input arrays using the function f :
- * forall i e, res.(i) = e -> e = f a1.(i) a2.(i) *)
-let zipwith f a1 a2 =
-  let flen_a1 = number_of_int (array_length a1) in
-  let flen_a2 = number_of_int (array_length a2) in
-  (* min_size is the size of the shortest array of a1 and a2 *)
-  let min_size = int_of_number (min flen_a1 flen_a2) in
-  let res = array_make min_size (f (array_get a1 0) (array_get a2 0)) in
-  (* For each i from 0 to min_size
-   * populate the resulting array with (f a1.(i) a2.(i)) *)
-  let rec for_loop i =
-    if (number_of_int i) < (number_of_int min_size) then
-    begin
-      let res_f = f (array_get a1 i) (array_get a2 i) in
-      array_set res i res_f ;
-      for_loop (i + 1)
-    end
-    else
-      res in
-  for_loop 1
-
-(** val lift_option : 'a option array -> 'a array option *)
-let lift_option ary =
-  (* val f : 'a array option -> 'a option -> 'a array option *)
-  let f ary_opt opt =
-    (* Some ary = ary_opt
-     * Some v = opt *)
-    Option.bind ary_opt (fun ary ->
-      Option.bind opt (fun v ->
-        Some (array_append ary (array_make 1 v))))
-  (* If the array contains no None value, the resulting value is Some A,
-   * with A being an array containing input-array inner values *)
-  in array_fold f (Some [| |]) ary
 
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
@@ -79,8 +41,8 @@ let rec value_eq v1 v2 = match v1 with
   begin
     match v2 with
     | Value_tuple t2 ->
-      let blist = zipwith value_eq t1 t2 in
-      all_true blist
+      let blist = MLArray.zipwith value_eq t1 t2 in
+      MLArray.all_true blist
     | _ -> false
   end
 | Value_list l1 ->
@@ -95,8 +57,8 @@ let rec value_eq v1 v2 = match v1 with
   begin
     match v2 with
     | Value_array a2 ->
-      let blist = zipwith value_eq a1 a2 in
-      all_true blist
+      let blist = MLArray.zipwith value_eq a1 a2 in
+      MLArray.all_true blist
     | _ -> false
   end
 | Value_fun _ -> false
@@ -147,11 +109,11 @@ let rec run_expression ctx _term_ = match _term_ with
 | Expression_tuple (_, tuple) ->
   let value_opts = array_map (fun e -> run_expression ctx e) tuple in
   (* Some t = lift_option value_opts *)
-  Option.bind (lift_option value_opts) (fun t -> Some (Value_tuple t))
+  Option.bind (MLArray.lift_option value_opts) (fun t -> Some (Value_tuple t))
 | Expression_array (_, ary) ->
   let value_opts = array_map (fun e -> run_expression ctx e) ary in
-  (* Some a = lift_option value_opts *)
-  Option.bind (lift_option value_opts) (fun a -> Some (Value_array a))
+  (* Some a = MLArray.lift_option value_opts *)
+  Option.bind (MLArray.lift_option value_opts) (fun a -> Some (Value_array a))
 | Expression_match (loc, expr, cases) ->
   let func = Expression_function (loc, cases) in
   let app = Expression_apply (loc, func, [| expr |]) in

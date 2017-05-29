@@ -56,6 +56,13 @@ var __LOC__ = "___LOC___"
 // val ( / ) : int -> int -> int
 // Operators mapped directly to JS equivalent
 
+var min = function(a, b) {
+  if a < b
+    return a;
+  else
+    return b;
+}
+
 //----------------------------------------------------------------------------
 // Floating-point Arithmetic
 
