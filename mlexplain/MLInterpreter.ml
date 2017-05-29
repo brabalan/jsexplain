@@ -164,30 +164,23 @@ and pattern_match ctx value _term_ = match _term_ with
   let v1 = run_constant c in
   if value_eq v1 value then Some ctx else None
 | Pattern_tuple (_, patts) ->
-  match value with
-  | Value_tuple tuples ->
-    let len = array_length patts in
-    let vallen = array_length tuples in
-
-    (* For each i in 0 to len,
-     * the value i is matched with the pattern i to populate the new environment *)
-    let rec for_loop ctx_opt i =
-      if i === len then
-        (* terminal case, the resulting environment is returned *)
-        ctx_opt
+  begin
+    match value with
+    (* No need to check if the pattern has the same number of components as the value
+     * since the typing prevent different-length tuple matching *)
+    | Value_tuple tuples -> pattern_match_array ctx tuples patts
+    | _ -> None
+  end
+| Pattern_array (loc, patts) ->
+  begin
+    match value with
+    | Value_array ary ->
+      if array_length patts === array_length ary then
+        pattern_match_array ctx ary patts
       else
-        let some_case_func ctx =
-          let vali = (array_get tuples i) in
-          let patti = (array_get patts i) in
-          for_loop (pattern_match ctx vali patti) (i + 1) in
-        (* Some ctx = ctx_opt *)
-        Option.bind ctx_opt some_case_func in
-
-    if len === vallen then
-     for_loop (Some ctx) 0
-    else
-      None
-  | _ -> None
+        None
+    | _ -> None
+  end
 
 and pattern_match_many ctx value cases = match cases with
 | [] -> None
@@ -195,3 +188,26 @@ and pattern_match_many ctx value cases = match cases with
   match pattern_match ctx value x.patt with
   | None -> pattern_match_many ctx value xs
   | Some ctx' -> run_expression ctx' x.expr
+
+and pattern_match_array ctx ary patts =
+  let len = array_length patts in
+  let vallen = array_length ary in
+
+  let flen = number_of_int len in
+  let fvallen = number_of_int vallen in
+  let min_len = int_of_number (min flen fvallen) in
+
+  (* For each i in 0 to len,
+   * the value i is matched with the pattern i to populate the new environment *)
+  let rec for_loop ctx_opt i =
+    if i === min_len then
+      (* terminal case, the resulting environment is returned *)
+      ctx_opt
+    else
+      let some_case_func ctx =
+        let vali = (array_get ary i) in
+        let patti = (array_get patts i) in
+        for_loop (pattern_match ctx vali patti) (i + 1) in
+      (* Some ctx = ctx_opt *)
+      Option.bind ctx_opt some_case_func in
+   for_loop (Some ctx) 0

@@ -49,6 +49,7 @@ and pattern =
 | Pattern_var of location * string [@f loc, id]
 | Pattern_constant of location * constant [@f loc, constant]
 | Pattern_tuple of location * pattern array [@f loc, patts]
+| Pattern_array of location * pattern array [@f loc, patts]
 
 and case = {
   patt : pattern ;

@@ -83,6 +83,10 @@ and translate_pattern file p =
     let patt_list = List.map (translate_pattern file) ppatts in
     let patts = Array.of_list patt_list in
     Pattern_tuple (loc, patts)
+  | Ppat_array ppatts ->
+    let patt_list = List.map (translate_pattern file) ppatts in
+    let patts = Array.of_list patt_list in
+    Pattern_array (loc, patts)
 
 (***************************************************************************************
  * Translation from an OCaml-side AST to a JS-side one
@@ -165,6 +169,9 @@ and js_of_pattern = function
 | Pattern_tuple (loc, patts) ->
   let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
   ctor_call "MLSyntax.Pattern_tuple" [| js_of_location loc ; js_patts |]
+| Pattern_array (loc, patts) ->
+  let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
+  ctor_call "MLSyntax.Pattern_array" [| js_of_location loc ; js_patts |]
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in
