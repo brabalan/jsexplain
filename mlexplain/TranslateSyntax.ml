@@ -85,6 +85,8 @@ and translate_pattern file p =
  * Translation from an OCaml-side AST to a JS-side one
  ***************************************************************************************)
 
+let ctor_call ctor params = Js.Unsafe.fun_call (Js.Unsafe.js_expr ctor) params
+
 let js_of_position pos = Js.Unsafe.obj [|
   ("line", Js.Unsafe.inject pos.line) ;
   ("column", Js.Unsafe.inject pos.column) |]
@@ -101,64 +103,60 @@ let js_of_located translator value =
   Js.Unsafe.obj [| ("loc", js_loc) ; ("value", js_value) |]
 
 let js_of_constant = function
-| Constant_integer i ->
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Constant_integer") [| Js.Unsafe.inject i |]
-| Constant_float f ->
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Constant_float") [| Js.Unsafe.inject f |]
-| Constant_char c ->
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Constant_char") [| Js.Unsafe.inject c |]
-| Constant_string s ->
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Constant_string") [| Js.Unsafe.inject s |]
+| Constant_integer i -> ctor_call "MLSyntax.Constant_integer" [| Js.Unsafe.inject i |]
+| Constant_float f -> ctor_call "MLSyntax.Constant_float" [| Js.Unsafe.inject f |]
+| Constant_char c -> ctor_call "MLSyntax.Constant_char" [| Js.Unsafe.inject c |]
+| Constant_string s -> ctor_call "MLSyntax.Constant_string" [| Js.Unsafe.inject s |]
 
 let rec js_of_expression = function
 | Expression_constant (loc, c) ->
   let js_c = js_of_constant c in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_constant") [| js_of_location loc ; js_c |]
+  ctor_call "MLSyntax.Expression_constant" [| js_of_location loc ; js_c |]
 | Expression_ident (loc, id) ->
   let js_ident = Js.Unsafe.inject (Js.string id) in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_ident") [| js_of_location loc ; js_ident |]
+  ctor_call "MLSyntax.Expression_ident" [| js_of_location loc ; js_ident |]
 | Expression_let (loc, is_rec, patt, val_exp, expr) ->
   let js_loc = js_of_location loc in
   let js_rec = Js.Unsafe.inject is_rec in
   let js_patt = js_of_pattern patt in
   let js_val_exp = js_of_expression val_exp in
   let js_expr = js_of_expression expr in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_let") [| js_loc ; js_rec ; js_patt ; js_val_exp ; js_expr |]
+  ctor_call "MLSyntax.Expression_let" [| js_loc ; js_rec ; js_patt ; js_val_exp ; js_expr |]
 | Expression_fun (loc, patt, expr) ->
   let js_loc = js_of_location loc in
   let js_patt = js_of_pattern patt in
   let js_expr = js_of_expression expr in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_fun") [| js_loc ; js_patt ; js_expr |]
+  ctor_call "MLSyntax.Expression_fun" [| js_loc ; js_patt ; js_expr |]
 | Expression_function (loc, cases) ->
   let js_loc = js_of_location loc in
-  let js_cases = Js.array (Array.map js_of_case cases) in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_function") [| js_loc ; Js.Unsafe.inject js_cases |]
+  let js_cases = Js.Unsafe.inject (Js.array (Array.map js_of_case cases)) in
+  ctor_call "MLSyntax.Expression_function" [| js_loc ; js_cases |]
 | Expression_apply (loc, func, args) ->
   let js_loc = js_of_location loc in
   let js_func = js_of_expression func in
-  let js_args = Js.array (Array.map js_of_expression args) in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_apply") [| js_loc ; js_func ; Js.Unsafe.inject js_args |]
+  let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_expression args)) in
+  ctor_call "MLSyntax.Expression_apply" [| js_loc ; js_func ; js_args |]
 | Expression_tuple (loc, el) ->
   let js_loc = js_of_location loc in
   let js_tuples = Array.map js_of_expression el in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_tuple") [| js_loc ; Js.Unsafe.inject (Js.array js_tuples) |]
+  let js_tuple_array = Js.Unsafe.inject (Js.array js_tuples) in
+  ctor_call "MLSyntax.Expression_tuple" [| js_loc ; js_tuple_array |]
 | Expression_match (loc, expr, cases) ->
   let js_loc = js_of_location loc in
   let js_expr = js_of_expression expr in
-  let js_cases = Js.array (Array.map js_of_case cases) in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Expression_match") [| js_loc ; js_expr ; Js.Unsafe.inject js_cases |]
+  let js_cases = Js.Unsafe.inject (Js.array (Array.map js_of_case cases)) in
+  ctor_call "MLSyntax.Expression_match" [| js_loc ; js_expr ; js_cases |]
 
 and js_of_pattern = function
-| Pattern_any loc -> Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Pattern_any") [| js_of_location loc |]
+| Pattern_any loc -> ctor_call "MLSyntax.Pattern_any" [| js_of_location loc |]
 | Pattern_constant (loc, c) ->
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Pattern_constant") [| js_of_location loc ; js_of_constant c |]
+  ctor_call "MLSyntax.Pattern_constant" [| js_of_location loc ; js_of_constant c |]
 | Pattern_var (loc, id) ->
-  Js.Unsafe.fun_call
-    (Js.Unsafe.js_expr "MLSyntax.Pattern_var")
-    [| js_of_location loc ; Js.Unsafe.inject (Js.string id) |]
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  ctor_call "MLSyntax.Pattern_var" [| js_of_location loc ; js_id |]
 | Pattern_tuple (loc, patts) ->
-  let js_patts = Js.array (Array.map js_of_pattern patts) in
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "MLSyntax.Pattern_tuple") [| js_of_location loc ; Js.Unsafe.inject js_patts |]
+  let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
+  ctor_call "MLSyntax.Pattern_tuple" [| js_of_location loc ; js_patts |]
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in
