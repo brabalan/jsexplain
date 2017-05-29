@@ -30,3 +30,24 @@ let rec foldl f first rest = match rest with
 
 (** Test if every elements in the list accept the predicate *)
 let for_all pred lst = foldl (fun b e -> b && pred e) true lst
+
+let length lst =
+  let rec aux acc lst = match lst with
+  | [] -> acc
+  | h :: t -> aux (acc + 1) t
+  in aux 0 lst
+
+let rec zipwith f l1 l2 =
+  match l1 with
+  | [] -> []
+  | h1 :: t1 ->
+    begin
+      match l2 with
+      | [] -> []
+      | h2 :: t2 -> f h1 h2 :: zipwith f t1 t2
+    end
+
+(** Check if every element in the list is true *)
+let rec all_true lst = match lst with
+| [] -> true
+| h :: t -> h && all_true t

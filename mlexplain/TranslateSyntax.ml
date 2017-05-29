@@ -59,6 +59,9 @@ let rec translate_expression file e =
   | Pexp_tuple pel ->
     let el = List.map (fun pe -> translate_expression file pe) pel in
     Expression_tuple (loc, Array.of_list el)
+  | Pexp_array pel ->
+    let el = List.map (fun pe -> translate_expression file pe) pel in
+    Expression_array (loc, Array.of_list el)
   | Pexp_match (pexp, pcases) ->
     let map_f case = {
       patt = translate_pattern file case.pc_lhs ;
@@ -141,6 +144,11 @@ let rec js_of_expression = function
   let js_tuples = Array.map js_of_expression el in
   let js_tuple_array = Js.Unsafe.inject (Js.array js_tuples) in
   ctor_call "MLSyntax.Expression_tuple" [| js_loc ; js_tuple_array |]
+| Expression_array (loc, el) ->
+  let js_loc = js_of_location loc in
+  let js_elements = Array.map js_of_expression el in
+  let js_array = Js.Unsafe.inject (Js.array js_elements) in
+  ctor_call "MLSyntax.Expression_array" [| js_loc ; js_array |]
 | Expression_match (loc, expr, cases) ->
   let js_loc = js_of_location loc in
   let js_expr = js_of_expression expr in

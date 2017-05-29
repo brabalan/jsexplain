@@ -6,6 +6,8 @@ type value =
 | Value_char of char [@f value]
 | Value_string of string [@f value]
 | Value_tuple of value array [@f value]
+| Value_list of value list [@f value]
+| Value_array of value array [@f value]
 | Value_fun of (value -> value option) [@f value]
 
 let all_true ary =
@@ -37,7 +39,10 @@ let zipwith f a1 a2 =
 
 (** val lift_option : 'a option array -> 'a array option *)
 let lift_option ary =
+  (* val f : 'a array option -> 'a option -> 'a array option *)
   let f ary_opt opt =
+    (* Some ary = ary_opt
+     * Some v = opt *)
     Option.bind ary_opt (fun ary ->
       Option.bind opt (fun v ->
         Some (array_append ary (array_make 1 v))))
@@ -75,6 +80,22 @@ let rec value_eq v1 v2 = match v1 with
     match v2 with
     | Value_tuple t2 ->
       let blist = zipwith value_eq t1 t2 in
+      all_true blist
+    | _ -> false
+  end
+| Value_list l1 ->
+  begin
+    match v2 with
+    | Value_list l2 ->
+      let blist = MLList.zipwith value_eq l1 l2 in
+      MLList.all_true blist
+    | _ -> false
+  end
+| Value_array a1 ->
+  begin
+    match v2 with
+    | Value_array a2 ->
+      let blist = zipwith value_eq a1 a2 in
       all_true blist
     | _ -> false
   end
@@ -127,6 +148,10 @@ let rec run_expression ctx _term_ = match _term_ with
   let value_opts = array_map (fun e -> run_expression ctx e) tuple in
   (* Some t = lift_option value_opts *)
   Option.bind (lift_option value_opts) (fun t -> Some (Value_tuple t))
+| Expression_array (_, ary) ->
+  let value_opts = array_map (fun e -> run_expression ctx e) ary in
+  (* Some a = lift_option value_opts *)
+  Option.bind (lift_option value_opts) (fun a -> Some (Value_array a))
 | Expression_match (loc, expr, cases) ->
   let func = Expression_function (loc, cases) in
   let app = Expression_apply (loc, func, [| expr |]) in
