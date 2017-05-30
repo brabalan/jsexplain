@@ -57,7 +57,7 @@ var __LOC__ = "___LOC___"
 // Operators mapped directly to JS equivalent
 
 var min = function(a, b) {
-  if a < b
+  if(a < b)
     return a;
   else
     return b;

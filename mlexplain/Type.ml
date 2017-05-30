@@ -8,7 +8,7 @@ and type_var = {
 }
 
 and simple_type =
-| Variable of type_var [@f var]
+| Variable of type_var [@f type_var]
 | Term of string * simple_type array [@f ctor, arguments]
 
 and type_scheme = {
@@ -62,38 +62,38 @@ let tuple_type types = Term ("*", types)
 let arrow_type t1 t2 = Term ("->", [| t1 t2 |])
 let array_type t = Term ("array", t)
 
-let is_known var = match var with
+let is_known tvar = match tvar with
 | Known _ -> true
 | Unknown -> false
 
-let get_known_value var = match var with
+let get_known_value tvar = match tvar with
 | Known v -> Some v
 | Unknown -> None
 
 (** val value_of : simple_type -> simple_type *)
 let rec value_of t = match t with
-| Variable var ->
+| Variable tvar ->
   begin
-    match get_known_value var.value with
+    match get_known_value tvar.value with
     | Some ty -> value_of ty
     | None -> t
   end
 | _ -> t
 
-let occurency_test var ty =
+let occurency_test tvar ty =
   let rec test t =
     match value_of t with
-    | Variable var' -> not (type_var_eq var var')
+    | Variable tvar' -> not (type_var_eq tvar tvar')
     | Term (_, args) -> MLArray.all_true (MLArray.map test args)
   in test ty
 
 let rec fix_levels max_lvl ty =
   match ty with
-  | Variable var ->
+  | Variable tvar ->
     let fmax = number_of_int max_lvl in
-    let flvl = number_of_int var.level in
+    let flvl = number_of_int tvar.level in
     if flvl > fmax then
-      Variable { var with level = max_lvl }
+      Variable { tvar with level = max_lvl }
     else
       ty
   | Term (ctor, args) ->
@@ -137,11 +137,11 @@ let new_unknown lvl = Variable { level = lvl ; value = Unknown }
 let generalize lvl ty =
   let rec find_parameters params ty =
     match value_of ty with
-    | Variable var ->
-      let fvarlevel = number_of_int var.level in
+    | Variable tvar ->
+      let fvarlevel = number_of_int tvar.level in
       let flvl = number_of_int lvl in
-      if fvarlevel > flvl && not (MLList.any type_var_eq var params) then
-        var :: params
+      if fvarlevel > flvl && not (MLList.any type_var_eq tvar params) then
+        tvar :: params
       else
         params
     | Term (ctor, args) ->
