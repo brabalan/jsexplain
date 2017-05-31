@@ -33,9 +33,9 @@ ASSEMBLY_JS_FILES := \
 	Option.unlog.js \
 	MLList.unlog.js \
 	MLArray.unlog.js \
+	Set.unlog.js \
 	Map.unlog.js \
 	MLSyntax.unlog.js \
-	Type.unlog.js \
 	MLInterpreter.log.js
 
 ASSEMBLY_JS := \

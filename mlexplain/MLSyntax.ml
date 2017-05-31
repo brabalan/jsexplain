@@ -39,7 +39,6 @@ type expression =
 | Expression_let of location * bool * pattern * expression * expression [@f loc, is_rec, id, e1, e2]
 | Expression_tuple of location * expression array [@f loc, components]
 | Expression_array of location * expression array [@f loc, elements]
-| Expression_fun of location * pattern * expression [@f loc, patt, expr]
 | Expression_function of location * case array [@f loc, cases]
 | Expression_apply of location * expression * expression array [@f loc, func, args]
 | Expression_match of location * expression * case array [@f loc, expr, cases]

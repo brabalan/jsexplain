@@ -28,6 +28,10 @@ let rec foldl f first rest = match rest with
 | [] -> first
 | h :: t -> foldl f (f first h) t
 
+let rec foldr f first rest = match rest with
+| [] -> first
+| h :: t -> f h (foldr f first t)
+
 (** Test if every elements in the list accept the predicate *)
 let for_all pred lst = foldl (fun b e -> b && pred e) true lst
 
@@ -56,3 +60,9 @@ let rec all_true lst = match lst with
 let rec any pred v lst = match lst with
 | [] -> false
 | h :: t -> pred h v || any pred v t
+
+(** Concatenate the two lists *)
+let concat l1 l2 =
+  let rl1 = rev l1 in
+  let func lst a = a :: lst in
+  foldl func l2 rl1

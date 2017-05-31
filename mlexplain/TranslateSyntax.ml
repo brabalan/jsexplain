@@ -2,7 +2,7 @@ open Lexing
 open Location
 open Longident
 open Asttypes
-open Parsetree
+open Typedtree
 open MLSyntax
 
 (***************************************************************************************
@@ -21,69 +21,80 @@ let translate_location file loc =
   { file = file ; start = start ; stop = stop }
 
 let translate_constant = function
-| Pconst_integer (i, _) -> Constant_integer (int_of_string i)
-| Pconst_float (f, _) -> Constant_float (float_of_string f)
-| Pconst_char c -> Constant_char c
-| Pconst_string (s, _) -> Constant_string s
+| Const_int i -> Constant_integer i
+| Const_float f -> Constant_float (float_of_string f)
+| Const_char c -> Constant_char c
+| Const_string (s, _) -> Constant_string s
 
 let rec translate_expression file e =
-  let loc = translate_location file e.pexp_loc in
-  match e.pexp_desc with
-  | Pexp_constant pc ->
+  let loc = translate_location file e.exp_loc in
+  match e.exp_desc with
+  | Texp_constant pc ->
     let c = translate_constant pc in
     Expression_constant (loc, c)
-  | Pexp_ident li ->
+  | Texp_ident (_, li, _) ->
     let id = Longident.last (li.txt) in
     Expression_ident (loc, id)
-  | Pexp_let (ir, [binding], exp) ->
+  | Texp_let (ir, [binding], exp) ->
     let is_rec = (ir = Recursive) in
-    let patt = translate_pattern file binding.pvb_pat in
-    let val_exp = translate_expression file binding.pvb_expr in
+    let patt = translate_pattern file binding.vb_pat in
+    let val_exp = translate_expression file binding.vb_expr in
     let expr = translate_expression file exp in
     Expression_let (loc, is_rec, patt, val_exp, expr)
-  | Pexp_fun (_, _, p, e) ->
-    let patt = translate_pattern file p in
-    let expr = translate_expression file e in
-    Expression_fun (loc, patt, expr)
-  | Pexp_function cases ->
+  | Texp_function (_, cases, _) ->
     let map_f case = {
-      patt = translate_pattern file case.pc_lhs ;
-      expr = translate_expression file case.pc_rhs
+      patt = translate_pattern file case.c_lhs ;
+      expr = translate_expression file case.c_rhs
     } in
     let case_array = Array.of_list (List.map map_f cases) in
     Expression_function (loc, case_array)
-  | Pexp_apply (pfunc, pargs) ->
+  | Texp_apply (pfunc, pargs) ->
+    let bind opt func = match opt with
+    | None -> None
+    | Some v -> func v in
     let func = translate_expression file pfunc in
-    let args = List.map (fun (_, pe) -> translate_expression file pe) pargs in
+    let opt_list = List.map
+      (fun (_, pe) -> bind pe (fun p -> Some (translate_expression file p)))
+      pargs in
+    let rec lift_option lst = match lst with
+    | [] -> Some []
+    | h :: t ->
+      bind h (fun a ->
+      bind (lift_option t) (fun rest ->
+      Some (a :: rest))) in
+    let args =
+      match lift_option opt_list with
+      | None -> failwith "labels not supported"
+      | Some a -> a in
     Expression_apply (loc, func, Array.of_list args)
-  | Pexp_tuple pel ->
+  | Texp_tuple pel ->
     let el = List.map (fun pe -> translate_expression file pe) pel in
     Expression_tuple (loc, Array.of_list el)
-  | Pexp_array pel ->
+  | Texp_array pel ->
     let el = List.map (fun pe -> translate_expression file pe) pel in
     Expression_array (loc, Array.of_list el)
-  | Pexp_match (pexp, pcases) ->
+  | Texp_match (pexp, pcases, _, _) ->
     let map_f case = {
-      patt = translate_pattern file case.pc_lhs ;
-      expr = translate_expression file case.pc_rhs
+      patt = translate_pattern file case.c_lhs ;
+      expr = translate_expression file case.c_rhs
     } in
     let cases = Array.of_list (List.map map_f pcases) in
     let expr = translate_expression file pexp in
     Expression_match (loc, expr, cases)
 
 and translate_pattern file p =
-  let loc = translate_location file p.ppat_loc in
-  match p.ppat_desc with
-  | Ppat_any -> Pattern_any loc
-  | Ppat_constant c -> Pattern_constant (loc, translate_constant c)
-  | Ppat_var li ->
+  let loc = translate_location file p.pat_loc in
+  match p.pat_desc with
+  | Tpat_any -> Pattern_any loc
+  | Tpat_constant c -> Pattern_constant (loc, translate_constant c)
+  | Tpat_var (_, li) ->
     let id = li.txt in
     Pattern_var (loc, id)
-  | Ppat_tuple ppatts ->
+  | Tpat_tuple ppatts ->
     let patt_list = List.map (translate_pattern file) ppatts in
     let patts = Array.of_list patt_list in
     Pattern_tuple (loc, patts)
-  | Ppat_array ppatts ->
+  | Tpat_array ppatts ->
     let patt_list = List.map (translate_pattern file) ppatts in
     let patts = Array.of_list patt_list in
     Pattern_array (loc, patts)
@@ -129,11 +140,6 @@ let rec js_of_expression = function
   let js_val_exp = js_of_expression val_exp in
   let js_expr = js_of_expression expr in
   ctor_call "MLSyntax.Expression_let" [| js_loc ; js_rec ; js_patt ; js_val_exp ; js_expr |]
-| Expression_fun (loc, patt, expr) ->
-  let js_loc = js_of_location loc in
-  let js_patt = js_of_pattern patt in
-  let js_expr = js_of_expression expr in
-  ctor_call "MLSyntax.Expression_fun" [| js_loc ; js_patt ; js_expr |]
 | Expression_function (loc, cases) ->
   let js_loc = js_of_location loc in
   let js_cases = Js.Unsafe.inject (Js.array (Array.map js_of_case cases)) in
@@ -187,6 +193,7 @@ let () =
       let s = Js.to_string str in
       let lexbuffer = from_string s in
       let past = Parse.expression lexbuffer in
-      let ast = translate_expression filename past in
+      let typed_ast = Typecore.type_expression Env.empty past in
+      let ast = translate_expression filename typed_ast in
       js_of_expression ast
   end)

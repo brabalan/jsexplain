@@ -78,12 +78,8 @@ let rec run_expression ctx _term_ = match _term_ with
   (* Some v = run_expression ctx e1
    * Some ctx' = pattern_match ctx v patt *)
   Option.bind (run_expression ctx e1) (fun v ->
-    Option.bind (pattern_match ctx v patt) (fun ctx' ->
-      run_expression ctx' e2))
-| Expression_fun (_, patt, expr) ->
-  (* Some ctx' = pattern_match ctx value patt *)
-  let f value = Option.bind (pattern_match ctx value patt) (fun ctx' -> run_expression ctx' expr) in
-  Some (Value_fun f)
+  Option.bind (pattern_match ctx v patt) (fun ctx' ->
+  run_expression ctx' e2))
 | Expression_function (_, cases) ->
   let func value = pattern_match_many ctx value (MLList.of_array cases) in
   Some (Value_fun func)
