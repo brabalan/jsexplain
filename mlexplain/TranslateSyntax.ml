@@ -102,6 +102,10 @@ and translate_pattern file p =
   | Tpat_variant (label, popt, _) ->
     let patt_opt = Option.bind popt (fun p -> Some (translate_pattern file p)) in
     Pattern_variant (loc, label, patt_opt)
+  | Tpat_alias (p, _, lid) ->
+    let patt = translate_pattern file p in
+    let id = lid.txt in
+    Pattern_alias (loc, patt, id)
 
 (***************************************************************************************
  * Translation from an OCaml-side AST to a JS-side one
@@ -197,6 +201,11 @@ and js_of_pattern = function
   let js_label = Js.Unsafe.inject (Js.string label) in
   let js_patt_opt = js_of_option js_of_pattern patt_opt in
   ctor_call "MLSyntax.Pattern_variant" [| js_of_location loc ; js_label ; js_patt_opt |]
+| Pattern_alias (loc, patt, id) ->
+  let js_loc = js_of_location loc in
+  let js_patt = js_of_pattern patt in
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  ctor_call "MLSyntax.Pattern_alias" [| js_loc ; js_patt ; js_id |]
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in

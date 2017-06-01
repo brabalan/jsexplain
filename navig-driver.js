@@ -79,7 +79,18 @@ var source_files = [
   'let x = 2 in x',
   'let _ = "no" in 65',
   'let y = (43, "hehe") in (y, y)',
-  'let x = 12 in let y = 43.78 in (y, x)'
+  'let x = 12 in let y = 43.78 in (y, x)',
+  'let zero = `O\n' +
+  'and succ n = `S n in\n' +
+  'let rec add a = function\n' +
+  '| `O -> a\n' +
+  '| `S n -> add (succ a) n in\n' +
+  'let mult a b =\n' +
+  '  let rec aux acc a = function\n' +
+  '  | `O -> acc\n' +
+  '  | `S n -> aux (add acc a) a n in\n' +
+  '  aux zero a b in\n' +
+  'mult (succ (succ zero)) (succ (succ (succ zero)))'
 ];
 
 source_files.reduce((select, file_content) => {

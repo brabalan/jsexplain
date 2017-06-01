@@ -105,17 +105,14 @@ let rec run_expression ctx _term_ = match _term_ with
     run_expression ctx' e2)
   else
     let func ctx_opt patt exp =
+      (* Some ctx = ctx_opt
+       * Some v = run_expression ctx exp *)
       Option.bind ctx_opt (fun ctx ->
       Option.bind (run_expression ctx exp) (fun v -> pattern_match ctx v patt)) in
     let patt_list = MLList.of_array patts in
     let exps = MLList.of_array exp_ary in
     Option.bind (MLList.foldl2 func (Some ctx) patt_list exps) (fun ctx' ->
     run_expression ctx' e2)
-    (* Some v = run_expression ctx e1
-     * Some ctx' = pattern_match ctx v patt *)
-    (* Option.bind (run_expression ctx e1) (fun v ->
-    Option.bind (pattern_match ctx v patt) (fun ctx' ->
-    run_expression ctx' e2))*)
 | Expression_function (_, cases) ->
   let func value = pattern_match_many ctx value (MLList.of_array cases) in
   Some (Value_fun func)
@@ -205,6 +202,9 @@ and pattern_match ctx value _term_ = match _term_ with
         None
     | _ -> None
   end
+| Pattern_alias (_, patt, id) ->
+  Option.bind (pattern_match ctx value patt) (fun ctx' ->
+  Some (Map.add id (Normal value) ctx'))
 
 and pattern_match_many ctx value cases = match cases with
 | [] -> None
