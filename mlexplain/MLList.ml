@@ -32,6 +32,13 @@ let rec foldr f first rest = match rest with
 | [] -> first
 | h :: t -> f h (foldr f first t)
 
+let rec foldl2 f first rest1 rest2 = match rest1 with
+| [] -> first
+| h1 :: t1 ->
+  match rest2 with
+  | [] -> first
+  | h2 :: t2 -> foldl2 f (f first h1 h2) t1 t2
+
 (** Test if every elements in the list accept the predicate *)
 let for_all pred lst = foldl (fun b e -> b && pred e) true lst
 

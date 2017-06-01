@@ -35,12 +35,13 @@ let rec translate_expression file e =
   | Texp_ident (_, li, _) ->
     let id = Longident.last (li.txt) in
     Expression_ident (loc, id)
-  | Texp_let (ir, [binding], exp) ->
+  | Texp_let (ir, binding_list, exp) ->
+    let bindings = Array.of_list binding_list in
     let is_rec = (ir = Recursive) in
-    let patt = translate_pattern file binding.vb_pat in
-    let val_exp = translate_expression file binding.vb_expr in
+    let patts = Array.map (fun b -> translate_pattern file b.vb_pat) bindings in
+    let val_exps = Array.map (fun b -> translate_expression file b.vb_expr) bindings in
     let expr = translate_expression file exp in
-    Expression_let (loc, is_rec, patt, val_exp, expr)
+    Expression_let (loc, is_rec, patts, val_exps, expr)
   | Texp_function (_, cases, _) ->
     let map_f case = {
       patt = translate_pattern file case.c_lhs ;
@@ -142,13 +143,13 @@ let rec js_of_expression = function
 | Expression_ident (loc, id) ->
   let js_ident = Js.Unsafe.inject (Js.string id) in
   ctor_call "MLSyntax.Expression_ident" [| js_of_location loc ; js_ident |]
-| Expression_let (loc, is_rec, patt, val_exp, expr) ->
+| Expression_let (loc, is_rec, patts, val_exps, expr) ->
   let js_loc = js_of_location loc in
   let js_rec = Js.Unsafe.inject is_rec in
-  let js_patt = js_of_pattern patt in
-  let js_val_exp = js_of_expression val_exp in
+  let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
+  let js_val_exps = Js.Unsafe.inject (Js.array (Array.map js_of_expression val_exps)) in
   let js_expr = js_of_expression expr in
-  ctor_call "MLSyntax.Expression_let" [| js_loc ; js_rec ; js_patt ; js_val_exp ; js_expr |]
+  ctor_call "MLSyntax.Expression_let" [| js_loc ; js_rec ; js_patts ; js_val_exps ; js_expr |]
 | Expression_variant (loc, label, value_opt) ->
   let js_loc = js_of_location loc in
   let js_label = Js.Unsafe.inject (Js.string label) in

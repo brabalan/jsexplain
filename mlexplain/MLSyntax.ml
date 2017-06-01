@@ -30,7 +30,7 @@ type constant =
 type expression =
 | Expression_constant of location * constant [@f loc, constant]
 | Expression_ident of location * string [@f loc, id]
-| Expression_let of location * bool * pattern * expression * expression [@f loc, is_rec, id, e1, e2]
+| Expression_let of location * bool * pattern array * expression array * expression [@f loc, is_rec, id, e1, e2]
 | Expression_tuple of location * expression array [@f loc, components]
 | Expression_array of location * expression array [@f loc, elements]
 | Expression_variant of location * string * expression option [@f loc, label, value_opt]

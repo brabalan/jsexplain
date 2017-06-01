@@ -16,6 +16,10 @@ and variant = {
   value_opt : value option
 }
 
+type binding =
+| Normal of value [@f normal_alloc]
+| Prealloc of expression [@f prealloc]
+
 let min a b = if a <= b then a else b
 
 let rec value_eq v1 v2 = match v1 with
@@ -77,7 +81,7 @@ let rec value_eq v1 v2 = match v1 with
     | _ -> false
   end
 
-type environment = (string, value) Map.map
+type environment = (string, binding) Map.map
 
 let run_constant = function
 | Constant_integer i -> Value_int i
@@ -87,13 +91,31 @@ let run_constant = function
 
 let rec run_expression ctx _term_ = match _term_ with
 | Expression_constant (_, c) -> Some (run_constant c)
-| Expression_ident (_, id) -> Map.find id ctx
-| Expression_let (_, _, patt, e1, e2) ->
-  (* Some v = run_expression ctx e1
-   * Some ctx' = pattern_match ctx v patt *)
-  Option.bind (run_expression ctx e1) (fun v ->
-  Option.bind (pattern_match ctx v patt) (fun ctx' ->
-  run_expression ctx' e2))
+| Expression_ident (_, id) -> Option.bind (Map.find id ctx) (fun b -> value_of ctx b)
+| Expression_let (_, is_rec, patts, exp_ary, e2) ->
+  if is_rec then
+    let prealloc p = match p with
+    | Pattern_var (_, id) -> Some id
+    | _ -> None in
+    let exps = MLList.of_array exp_ary in
+    Option.bind (MLArray.lift_option (MLArray.map prealloc patts)) (fun id_ary ->
+    let ids = MLList.of_array id_ary in
+    let func ctx id exp = Map.add id (Prealloc exp) ctx in
+    let ctx' = MLList.foldl2 func ctx ids exps in
+    run_expression ctx' e2)
+  else
+    let func ctx_opt patt exp =
+      Option.bind ctx_opt (fun ctx ->
+      Option.bind (run_expression ctx exp) (fun v -> pattern_match ctx v patt)) in
+    let patt_list = MLList.of_array patts in
+    let exps = MLList.of_array exp_ary in
+    Option.bind (MLList.foldl2 func (Some ctx) patt_list exps) (fun ctx' ->
+    run_expression ctx' e2)
+    (* Some v = run_expression ctx e1
+     * Some ctx' = pattern_match ctx v patt *)
+    (* Option.bind (run_expression ctx e1) (fun v ->
+    Option.bind (pattern_match ctx v patt) (fun ctx' ->
+    run_expression ctx' e2))*)
 | Expression_function (_, cases) ->
   let func value = pattern_match_many ctx value (MLList.of_array cases) in
   Some (Value_fun func)
@@ -102,7 +124,7 @@ let rec run_expression ctx _term_ = match _term_ with
     (* Some v = run_expression ctx arg
      * Some res = func v *)
     Option.bind (run_expression ctx arg) (fun v ->
-      Option.bind (func v) (fun res -> run_apply res args))
+    Option.bind (func v) (fun res -> run_apply res args))
   and run_apply func args =
     match args with
     (* No argument means a value to return *)
@@ -133,9 +155,13 @@ let rec run_expression ctx _term_ = match _term_ with
   let app = Expression_apply (loc, func, [| expr |]) in
   run_expression ctx app
 
+and value_of ctx b = match b with
+| Normal v -> Some v
+| Prealloc e -> run_expression ctx e
+
 and pattern_match ctx value _term_ = match _term_ with
 | Pattern_any _ -> Some ctx
-| Pattern_var (_, id) -> Some (Map.add id value ctx)
+| Pattern_var (_, id) -> Some (Map.add id (Normal value) ctx)
 | Pattern_constant (_, c) ->
   let v1 = run_constant c in
   if value_eq v1 value then Some ctx else None
