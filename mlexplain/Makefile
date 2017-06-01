@@ -81,10 +81,13 @@ lineof.js: $(ALL_LINEOF) $(LINEOF_BIN)
 MLSyntax.cmo: MLSyntax.ml
 	ocamlfind ocamlc -o $@ -c $<
 
-TranslateSyntax.cmo: TranslateSyntax.ml MLSyntax.cmo
+Option.cmo: Option.ml
+	ocamlfind ocamlc -o $@ -c $<
+
+TranslateSyntax.cmo: TranslateSyntax.ml Option.cmo MLSyntax.cmo
 	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -o $@ -c $<
 
-frontend.byte: MLSyntax.cmo TranslateSyntax.cmo
+frontend.byte: MLSyntax.cmo Option.cmo TranslateSyntax.cmo
 	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg -o $@ $^
 
 frontend.js: frontend.byte

@@ -73,6 +73,9 @@ let rec translate_expression file e =
   | Texp_array pel ->
     let el = List.map (fun pe -> translate_expression file pe) pel in
     Expression_array (loc, Array.of_list el)
+  | Texp_variant (label, eopt) ->
+    let value_opt = Option.bind eopt (fun e -> Some (translate_expression file e)) in
+    Expression_variant (loc, label, value_opt)
   | Texp_match (pexp, pcases, _, _) ->
     let map_f case = {
       patt = translate_pattern file case.c_lhs ;
@@ -98,6 +101,9 @@ and translate_pattern file p =
     let patt_list = List.map (translate_pattern file) ppatts in
     let patts = Array.of_list patt_list in
     Pattern_array (loc, patts)
+  | Tpat_variant (label, popt, _) ->
+    let patt_opt = Option.bind popt (fun p -> Some (translate_pattern file p)) in
+    Pattern_variant (loc, label, patt_opt)
 
 (***************************************************************************************
  * Translation from an OCaml-side AST to a JS-side one
@@ -120,6 +126,12 @@ let js_of_located translator value =
   let js_loc = js_of_location value.loc in
   Js.Unsafe.obj [| ("loc", js_loc) ; ("value", js_value) |]
 
+let js_of_option func opt = match opt with
+| None -> ctor_call "None" [| |]
+| Some v ->
+  let js_v = func v in
+  ctor_call "Some" [| js_v |]
+
 let js_of_constant = function
 | Constant_integer i -> ctor_call "MLSyntax.Constant_integer" [| Js.Unsafe.inject i |]
 | Constant_float f -> ctor_call "MLSyntax.Constant_float" [| Js.Unsafe.inject f |]
@@ -140,6 +152,11 @@ let rec js_of_expression = function
   let js_val_exp = js_of_expression val_exp in
   let js_expr = js_of_expression expr in
   ctor_call "MLSyntax.Expression_let" [| js_loc ; js_rec ; js_patt ; js_val_exp ; js_expr |]
+| Expression_variant (loc, label, value_opt) ->
+  let js_loc = js_of_location loc in
+  let js_label = Js.Unsafe.inject (Js.string label) in
+  let js_value_opt = js_of_option js_of_expression value_opt in
+  ctor_call "MLSyntax.Expression_variant" [| js_loc ; js_label ; js_value_opt |]
 | Expression_function (loc, cases) ->
   let js_loc = js_of_location loc in
   let js_cases = Js.Unsafe.inject (Js.array (Array.map js_of_case cases)) in
@@ -178,6 +195,10 @@ and js_of_pattern = function
 | Pattern_array (loc, patts) ->
   let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
   ctor_call "MLSyntax.Pattern_array" [| js_of_location loc ; js_patts |]
+| Pattern_variant (loc, label, patt_opt) ->
+  let js_label = Js.Unsafe.inject (Js.string label) in
+  let js_patt_opt = js_of_option js_of_pattern patt_opt in
+  ctor_call "MLSyntax.Pattern_variant" [| js_of_location loc ; js_label ; js_patt_opt |]
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in

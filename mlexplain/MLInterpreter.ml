@@ -9,6 +9,12 @@ type value =
 | Value_list of value list [@f value]
 | Value_array of value array [@f value]
 | Value_fun of (value -> value option) [@f value]
+| Value_variant of variant [@f variant]
+
+and variant = {
+  label : string ;
+  value_opt : value option
+}
 
 let min a b = if a <= b then a else b
 
@@ -62,6 +68,14 @@ let rec value_eq v1 v2 = match v1 with
     | _ -> false
   end
 | Value_fun _ -> false
+| Value_variant vr1 ->
+  begin
+    match v2 with
+    | Value_variant vr2 ->
+      let val_eq = Option.eq value_eq vr1.value_opt vr2.value_opt in
+      vr1.label === vr2.label && val_eq
+    | _ -> false
+  end
 
 type environment = (string, value) Map.map
 
@@ -110,6 +124,10 @@ let rec run_expression ctx _term_ = match _term_ with
   let value_opts = array_map (fun e -> run_expression ctx e) ary in
   (* Some a = MLArray.lift_option value_opts *)
   Option.bind (MLArray.lift_option value_opts) (fun a -> Some (Value_array a))
+| Expression_variant (_, label, expr_opt) ->
+  let value_opt = Option.bind expr_opt (fun e -> run_expression ctx e) in
+  let variant = { label = label ; value_opt = value_opt } in
+  Some (Value_variant variant)
 | Expression_match (loc, expr, cases) ->
   let func = Expression_function (loc, cases) in
   let app = Expression_apply (loc, func, [| expr |]) in
@@ -129,12 +147,34 @@ and pattern_match ctx value _term_ = match _term_ with
     | Value_tuple tuples -> pattern_match_array ctx tuples patts
     | _ -> None
   end
-| Pattern_array (loc, patts) ->
+| Pattern_array (_, patts) ->
   begin
     match value with
     | Value_array ary ->
       if array_length patts === array_length ary then
         pattern_match_array ctx ary patts
+      else
+        None
+    | _ -> None
+  end
+| Pattern_variant (_, label, patt_opt) ->
+  begin
+    match value with
+    | Value_variant variant ->
+      if variant.label === label then
+        match patt_opt with
+        | None ->
+          begin
+            match variant.value_opt with
+            | None -> Some ctx
+            | Some _ -> None
+          end
+        | Some patt ->
+          begin
+            match variant.value_opt with
+            | None -> None
+            | Some v -> pattern_match ctx v patt
+          end
       else
         None
     | _ -> None
