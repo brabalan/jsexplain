@@ -117,11 +117,11 @@ let rec run_expression ctx _term_ = match _term_ with
     Option.bind (run_expression ctx fe) (fun func ->
       run_apply func (MLList.of_array argse))
 | Expression_tuple (_, tuple) ->
-  let value_opts = array_map (fun e -> run_expression ctx e) tuple in
+  let value_opts = MLArray.map (fun e -> run_expression ctx e) tuple in
   (* Some t = lift_option value_opts *)
   Option.bind (MLArray.lift_option value_opts) (fun t -> Some (Value_tuple t))
 | Expression_array (_, ary) ->
-  let value_opts = array_map (fun e -> run_expression ctx e) ary in
+  let value_opts = MLArray.map (fun e -> run_expression ctx e) ary in
   (* Some a = MLArray.lift_option value_opts *)
   Option.bind (MLArray.lift_option value_opts) (fun a -> Some (Value_array a))
 | Expression_variant (_, label, expr_opt) ->
@@ -151,7 +151,7 @@ and pattern_match ctx value _term_ = match _term_ with
   begin
     match value with
     | Value_array ary ->
-      if array_length patts === array_length ary then
+      if MLArray.length patts === MLArray.length ary then
         pattern_match_array ctx ary patts
       else
         None
@@ -188,8 +188,8 @@ and pattern_match_many ctx value cases = match cases with
   | Some ctx' -> run_expression ctx' x.expr
 
 and pattern_match_array ctx ary patts =
-  let len = array_length patts in
-  let vallen = array_length ary in
+  let len = MLArray.length patts in
+  let vallen = MLArray.length ary in
 
   let flen = number_of_int len in
   let fvallen = number_of_int vallen in
@@ -203,8 +203,8 @@ and pattern_match_array ctx ary patts =
       ctx_opt
     else
       let some_case_func ctx =
-        let vali = (array_get ary i) in
-        let patti = (array_get patts i) in
+        let vali = (MLArray.get ary i) in
+        let patti = (MLArray.get patts i) in
         for_loop (pattern_match ctx vali patti) (i + 1) in
       (* Some ctx = ctx_opt *)
       Option.bind ctx_opt some_case_func in

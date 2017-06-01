@@ -27,12 +27,6 @@ type constant =
 | Constant_char of char [@f value]
 | Constant_string of string [@f value]
 
-type datatype =
-| Datatype_simple of string [@f name]
-| Datatype_variable of int [@f index]
-| Datatype_arrow of datatype located * datatype located [@f arg, ret]
-| Datatype_tuple of datatype located list [@f components]
-
 type expression =
 | Expression_constant of location * constant [@f loc, constant]
 | Expression_ident of location * string [@f loc, id]

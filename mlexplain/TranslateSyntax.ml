@@ -49,18 +49,15 @@ let rec translate_expression file e =
     let case_array = Array.of_list (List.map map_f cases) in
     Expression_function (loc, case_array)
   | Texp_apply (pfunc, pargs) ->
-    let bind opt func = match opt with
-    | None -> None
-    | Some v -> func v in
     let func = translate_expression file pfunc in
     let opt_list = List.map
-      (fun (_, pe) -> bind pe (fun p -> Some (translate_expression file p)))
+      (fun (_, pe) -> Option.bind pe (fun p -> Some (translate_expression file p)))
       pargs in
     let rec lift_option lst = match lst with
     | [] -> Some []
     | h :: t ->
-      bind h (fun a ->
-      bind (lift_option t) (fun rest ->
+      Option.bind h (fun a ->
+      Option.bind (lift_option t) (fun rest ->
       Some (a :: rest))) in
     let args =
       match lift_option opt_list with

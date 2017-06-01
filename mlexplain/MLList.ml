@@ -35,12 +35,14 @@ let rec foldr f first rest = match rest with
 (** Test if every elements in the list accept the predicate *)
 let for_all pred lst = foldl (fun b e -> b && pred e) true lst
 
+(** Lhe length of the list *)
 let length lst =
   let rec aux acc lst = match lst with
   | [] -> acc
   | h :: t -> aux (acc + 1) t
   in aux 0 lst
 
+(** Use the function as a binary operator and applies it each element of both lists, return the result list *)
 let rec zipwith f l1 l2 =
   match l1 with
   | [] -> []

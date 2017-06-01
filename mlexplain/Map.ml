@@ -36,6 +36,7 @@ let rec mem key m = match m.bindings with
 
 (** Add the pair (key, value) in the map *)
 let add key value m =
+  (** Replace the value at the given key by the new one or do nothing if the key does not exist in the map *)
   let rec replace key value m = match m.bindings with
   | [] -> m
   | h :: t ->
@@ -51,6 +52,7 @@ let add key value m =
   else
     { m with bindings = { key = key ; value = value } :: m.bindings }
 
+(** Left-biased union of the two maps *)
 let rec union m1 m2 = match m1.bindings with
 | [] -> m2
 | h :: t ->
@@ -58,6 +60,7 @@ let rec union m1 m2 = match m1.bindings with
   let m2' = add h.key h.value m2 in
   union m1' m2'
 
+(** Apply the function on every element in the map *)
 let rec map f m = match m.bindings with
 | [] -> empty_map m.eq
 | h :: t ->
@@ -65,6 +68,7 @@ let rec map f m = match m.bindings with
   let m' = map f { m with bindings = t } in
   { m' with bindings = h' :: m'.bindings }
 
+(** Remove the pair identified with the given key from the map *)
 let rec remove key m = match m.bindings with
 | [] -> m
 | h :: t ->
@@ -75,6 +79,7 @@ let rec remove key m = match m.bindings with
     let mres = remove key m' in
     { mres with bindings = h :: mres.bindings }
 
+(** Get a list of the values stored in the map *)
 let rec elems m = match m.bindings with
 | [] -> []
 | h :: t -> h.value :: elems { m with bindings = t }
