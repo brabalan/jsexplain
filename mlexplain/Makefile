@@ -36,6 +36,7 @@ ASSEMBLY_JS_FILES := \
 	Set.unlog.js \
 	Map.unlog.js \
 	MLSyntax.unlog.js \
+	Value.unlog.js \
 	MLInterpreter.log.js
 
 ASSEMBLY_JS := \

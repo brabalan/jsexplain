@@ -1021,9 +1021,9 @@ function interp_val_is_list(v) {
   
 function interp_val_is_syntax(v) {
   return has_tag_in_set(v, ["Expression_constant", "Expression_ident", "Expression_let", "Expression_tuple",
-    "Expression_function", "Expression_fun", "Expression_apply",
+    "Expression_function", "Expression_match", "Expression_apply", "Expression_variant",
     "Constant_integer", "Constant_float", "Constant_char", "Constant_string",
-    "Pattern_any", "Pattern_constant", "Pattern_var"]);
+    "Pattern_any", "Pattern_constant", "Pattern_var", "Pattern_tuple"]);
 }
 
 function interp_val_is_state(v) {
@@ -1375,7 +1375,7 @@ function runDebug() {
   reset_datalog();
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
-  MLInterpreter.run_expression(Map.empty_map(function(a,b) { return a === b; }), program);
+  MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
 }
 
 function run() {
@@ -1384,7 +1384,7 @@ function run() {
  try {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
-    MLInterpreter.run_expression(Map.empty_map(function(a,b) { return a === b; }), program);
+    MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
  } catch (e) {
    success = false;
    // alert("Error during the run");
@@ -1405,7 +1405,7 @@ function run() {
 
 function parseSource(source, name, readOnly) {
   // var tree = CalcParserLib.parseExpr(name, source);
-  var tree = MLExplain.parseExpr(name, source);
+  var tree = MLExplain.parseStructure(name, source);
   //var tree = esprimaToAST(esprima.parse(source, {loc: true, range: true}), source, name);
   newSourceDoc(name, source, readOnly);
   return tree;

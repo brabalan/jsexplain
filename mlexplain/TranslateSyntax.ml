@@ -2,6 +2,7 @@ open Lexing
 open Location
 open Longident
 open Asttypes
+open Parsetree
 open Typedtree
 open MLSyntax
 
@@ -106,6 +107,34 @@ and translate_pattern file p =
     let patt = translate_pattern file p in
     let id = lid.txt in
     Pattern_alias (loc, patt, id)
+
+and translate_structure_item file s =
+  let loc = translate_location file s.str_loc in
+  match s.str_desc with
+  | Tstr_eval (e, _) ->
+    let expr = translate_expression file e in
+    Structure_eval (loc, expr)
+  | Tstr_value (rec_flag, binding_list) ->
+    let bindings = Array.of_list binding_list in
+    let is_rec = (rec_flag = Recursive) in
+    let patts = Array.map (fun b -> translate_pattern file b.vb_pat) bindings in
+    let val_exps = Array.map (fun b -> translate_expression file b.vb_expr) bindings in
+    Structure_value (loc, is_rec, patts, val_exps)
+
+and translate_structure file s =
+  let items = Array.of_list (List.map (translate_structure_item file) s.str_items) in
+  let loc =
+    if Array.length items > 0 then
+      let item_array = Array.of_list s.str_items in
+      let first = Array.get item_array 0 in
+      let last = Array.get item_array (Array.length items - 1) in
+      translate_location file { loc_start = first.str_loc.loc_start ;
+        loc_end = last.str_loc.loc_end ;
+        loc_ghost = false
+      }
+    else
+      new_location file (new_position 1 0) (new_position 1 0) in
+  Structure (loc, items)
 
 (***************************************************************************************
  * Translation from an OCaml-side AST to a JS-side one
@@ -212,6 +241,24 @@ and js_of_case case =
   let js_expr = js_of_expression case.expr in
   Js.Unsafe.obj [| ("patt", js_patt) ; ("expr", js_expr) |]
 
+and js_of_structure_item = function
+| Structure_eval (loc, expr) ->
+  let js_loc = js_of_location loc in
+  let js_expr = js_of_expression expr in
+  ctor_call "MLSyntax.Structure_eval" [| js_loc ; js_expr |]
+| Structure_value (loc, is_rec, patts, val_exps) ->
+  let js_loc = js_of_location loc in
+  let js_rec = Js.Unsafe.inject is_rec in
+  let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
+  let js_val_exps = Js.Unsafe.inject (Js.array (Array.map js_of_expression val_exps)) in
+  ctor_call "MLSyntax.Structure_value" [| js_loc ; js_rec ; js_patts ; js_val_exps |]
+
+and js_of_structure = function
+| Structure (loc, items) ->
+  let js_loc = js_of_location loc in
+  let js_items = Js.Unsafe.inject (Js.array (Array.map js_of_structure_item items)) in
+  ctor_call "MLSyntax.Structure" [| js_loc ; js_items |]
+
 
 let () =
   Js.export "MLExplain"
@@ -224,4 +271,24 @@ let () =
       let typed_ast = Typecore.type_expression Env.empty past in
       let ast = translate_expression filename typed_ast in
       js_of_expression ast
+    method parseStructure name str =
+      let filename = Js.to_string name in
+      let s = Js.to_string str in
+      let lexbuffer = from_string s in
+      let past = Parse.implementation lexbuffer in
+      (* Create a location for the entire structure *)
+      let structure_loc = function
+      | [] -> Location.none
+      | start :: [] -> start.pstr_loc
+      | start :: rest ->
+        match List.rev rest with
+        | last :: _ -> {
+            loc_start = start.pstr_loc.loc_start ;
+            loc_end = last.pstr_loc.loc_end ;
+            loc_ghost = false
+          }
+        | [] -> Location.none (* absurd *) in
+      let (typed_ast, _, _) = Typemod.type_structure Env.empty past (structure_loc past) in
+      let struct_ = translate_structure filename typed_ast in
+      js_of_structure struct_
   end)

@@ -1,20 +1,5 @@
 open MLSyntax
-
-type value =
-| Value_int of int [@f value]
-| Value_float of float [@f value]
-| Value_char of char [@f value]
-| Value_string of string [@f value]
-| Value_tuple of value array [@f value]
-| Value_list of value list [@f value]
-| Value_array of value array [@f value]
-| Value_fun of (value -> value option) [@f value]
-| Value_variant of variant [@f variant]
-
-and variant = {
-  label : string ;
-  value_opt : value option
-}
+open Value
 
 type binding =
 | Normal of value [@f normal_alloc]
@@ -22,66 +7,12 @@ type binding =
 
 let min a b = if a <= b then a else b
 
-let rec value_eq v1 v2 = match v1 with
-| Value_int i1 ->
-  begin
-    match v2 with
-    | Value_int i2 -> int_eq i1 i2
-    | _ -> false
-  end
-| Value_float f1 ->
-  begin
-    match v2 with
-    | Value_float f2 -> f1 = f2
-    | _ -> false
-  end
-| Value_char c1 ->
-  begin
-    match v2 with
-    | Value_char c2 -> c1 === c2
-    | _ -> false
-  end
-| Value_string s1 ->
-  begin
-    match v2 with
-    | Value_string s2 -> string_eq s1 s2
-    | _ -> false
-  end
-| Value_tuple t1 ->
-  begin
-    match v2 with
-    | Value_tuple t2 ->
-      let blist = MLArray.zipwith value_eq t1 t2 in
-      MLArray.all_true blist
-    | _ -> false
-  end
-| Value_list l1 ->
-  begin
-    match v2 with
-    | Value_list l2 ->
-      let blist = MLList.zipwith value_eq l1 l2 in
-      MLList.all_true blist
-    | _ -> false
-  end
-| Value_array a1 ->
-  begin
-    match v2 with
-    | Value_array a2 ->
-      let blist = MLArray.zipwith value_eq a1 a2 in
-      MLArray.all_true blist
-    | _ -> false
-  end
-| Value_fun _ -> false
-| Value_variant vr1 ->
-  begin
-    match v2 with
-    | Value_variant vr2 ->
-      let val_eq = Option.eq value_eq vr1.value_opt vr2.value_opt in
-      vr1.label === vr2.label && val_eq
-    | _ -> false
-  end
-
 type environment = (string, binding) Map.map
+
+type structure_item_result = {
+  value : value ;
+  ctx : environment
+}
 
 let run_constant = function
 | Constant_integer i -> Value_int i
@@ -235,3 +166,45 @@ and pattern_match_array ctx ary patts =
       (* Some ctx = ctx_opt *)
       Option.bind ctx_opt some_case_func in
    for_loop (Some ctx) 0
+
+let run_structure_item ctx _term_ = match _term_ with
+| Structure_eval (_, e) -> Option.bind (run_expression ctx e) (fun v -> Some { value = v ; ctx = ctx })
+| Structure_value (_, is_rec, patts, exp_ary) ->
+  if is_rec then
+    let prealloc p = match p with
+    | Pattern_var (_, id) -> Some id
+    | _ -> None in
+    let exps = MLList.of_array exp_ary in
+    Option.bind (MLArray.lift_option (MLArray.map prealloc patts)) (fun id_ary ->
+    let ids = MLList.of_array id_ary in
+    let func ctx id exp = Map.add id (Prealloc exp) ctx in
+    let ctx' = MLList.foldl2 func ctx ids exps in
+    (* let id = MLArray.get id_ary 0 in *)
+    (* Option.bind (Map.find id ctx') (fun binding -> *)
+    (* Option.bind (value_of ctx' binding) (fun v -> *)
+    (* Some { value = v ; ctx = ctx' }))) *)
+    Some { value = Value_int 0 ; ctx = ctx' })
+  else
+    let func ctx_opt patt exp =
+      (* Some ctx = ctx_opt
+       * Some v = run_expression ctx exp *)
+      Option.bind ctx_opt (fun ctx ->
+      Option.bind (run_expression ctx exp) (fun v -> pattern_match ctx v patt)) in
+    let patt_list = MLList.of_array patts in
+    let exps = MLList.of_array exp_ary in
+    Option.bind (MLList.foldl2 func (Some ctx) patt_list exps) (fun ctx' ->
+    let elems = Map.elems ctx' in
+    let last_opt = match MLList.rev elems with
+    | [] -> None
+    | h :: t -> Some h in
+    Option.bind last_opt (fun last ->
+    Option.bind (value_of ctx' last) (fun v ->
+    Some { value = v ; ctx = ctx' })))
+
+let run_structure ctx _term_ =
+  let func opt _term_ =
+    Option.bind opt (fun res ->
+    run_structure_item res.ctx _term_) in
+  let fake_res = Some { value = Value_int 0 ; ctx = ctx } in
+  match _term_ with
+  | Structure (_, items) -> MLArray.fold func fake_res items
