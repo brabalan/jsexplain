@@ -82,12 +82,18 @@ let rec run_expression ctx _term_ = match _term_ with
   let func = Expression_function (loc, cases) in
   let app = Expression_apply (loc, func, [| expr |]) in
   run_expression ctx app
+| Expression_constructor (_, ctor, args) ->
+  let value_opts = MLArray.map (fun e -> run_expression ctx e) args in
+  (* Some a = MLArray.lift_option value_opts *)
+  Option.bind (MLArray.lift_option value_opts) (fun values ->
+  let sum = Sumtype { constructor = ctor ; args = values } in
+  Some (Value_custom sum))
 
 and value_of ctx b = match b with
 | Normal v -> Some v
 | Prealloc e -> run_expression ctx e
 
-and pattern_match ctx value _term_ = match _term_ with
+and pattern_match ctx value patt = match patt with
 | Pattern_any _ -> Some ctx
 | Pattern_var (_, id) -> Some (Map.add id (Normal value) ctx)
 | Pattern_constant (_, c) ->
@@ -136,6 +142,20 @@ and pattern_match ctx value _term_ = match _term_ with
 | Pattern_alias (_, patt, id) ->
   Option.bind (pattern_match ctx value patt) (fun ctx' ->
   Some (Map.add id (Normal value) ctx'))
+| Pattern_constructor (_, ctor, args) ->
+  begin
+    match value with
+    | Value_custom cstm ->
+      begin
+        match cstm with
+        | Sumtype sum ->
+          if sum.constructor === ctor then
+            pattern_match_array ctx sum.args args
+          else
+            None
+      end
+    | _ -> None
+  end
 
 and pattern_match_many ctx value cases = match cases with
 | [] -> None
@@ -175,15 +195,16 @@ let run_structure_item ctx _term_ = match _term_ with
     | Pattern_var (_, id) -> Some id
     | _ -> None in
     let exps = MLList.of_array exp_ary in
-    Option.bind (MLArray.lift_option (MLArray.map prealloc patts)) (fun id_ary ->
+    let prealloc_vars = MLArray.map prealloc patts in
+    Option.bind (MLArray.lift_option prealloc_vars) (fun id_ary ->
     let ids = MLList.of_array id_ary in
     let func ctx id exp = Map.add id (Prealloc exp) ctx in
     let ctx' = MLList.foldl2 func ctx ids exps in
-    (* let id = MLArray.get id_ary 0 in *)
-    (* Option.bind (Map.find id ctx') (fun binding -> *)
-    (* Option.bind (value_of ctx' binding) (fun v -> *)
-    (* Some { value = v ; ctx = ctx' }))) *)
-    Some { value = Value_int 0 ; ctx = ctx' })
+    let id = MLArray.get id_ary (MLArray.length id_ary - 1) in
+    Option.bind (Map.find id ctx') (fun binding ->
+    Option.bind (value_of ctx' binding) (fun v ->
+    Some { value = v ; ctx = ctx' })))
+    (* Some { value = Value_int 0 ; ctx = ctx' }) *)
   else
     let func ctx_opt patt exp =
       (* Some ctx = ctx_opt
@@ -194,12 +215,19 @@ let run_structure_item ctx _term_ = match _term_ with
     let exps = MLList.of_array exp_ary in
     Option.bind (MLList.foldl2 func (Some ctx) patt_list exps) (fun ctx' ->
     let elems = Map.elems ctx' in
-    let last_opt = match MLList.rev elems with
+    let rev_elems = MLList.rev elems in
+    let last_opt = match rev_elems with
     | [] -> None
     | h :: t -> Some h in
     Option.bind last_opt (fun last ->
     Option.bind (value_of ctx' last) (fun v ->
     Some { value = v ; ctx = ctx' })))
+| Structure_type _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
+
+(* let run_structure_item ctx _term_ = match _term_ with
+| Structure_eval (_, e) -> Option.bind (run_expression ctx e) (fun v -> Some { value = v ; ctx = ctx })
+| Structure_type _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
+| Structure_value _ -> Some { value = Value_tuple [| |] ; ctx = ctx } *)
 
 let run_structure ctx _term_ =
   let func opt _term_ =

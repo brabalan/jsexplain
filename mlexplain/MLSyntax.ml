@@ -37,6 +37,7 @@ type expression =
 | Expression_function of location * case array [@f loc, cases]
 | Expression_apply of location * expression * expression array [@f loc, func, args]
 | Expression_match of location * expression * case array [@f loc, expr, cases]
+| Expression_constructor of location * string * expression array [@f loc, ctor, args]
 
 and pattern =
 | Pattern_any of location [@f loc]
@@ -46,6 +47,7 @@ and pattern =
 | Pattern_array of location * pattern array [@f loc, patts]
 | Pattern_variant of location * string * pattern option [@f loc, label, arg]
 | Pattern_alias of location * pattern * string [@f loc, patt, alias]
+| Pattern_constructor of location * string * pattern array [@f loc, ctor, args]
 
 and case = {
   patt : pattern ;
@@ -55,5 +57,6 @@ and case = {
 and structure_item =
 | Structure_eval of location * expression [@f loc, expr]
 | Structure_value of location * bool * pattern array * expression array [@f loc, is_rec, ids, exps]
+| Structure_type of location [@f loc]
 
 and structure = Structure of location * structure_item array [@f loc, items]

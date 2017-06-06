@@ -83,6 +83,10 @@ let rec translate_expression file e =
     let cases = Array.of_list (List.map map_f pcases) in
     let expr = translate_expression file pexp in
     Expression_match (loc, expr, cases)
+  | Texp_construct (lid, _, exprs) ->
+    let ctor = lid.txt in
+    let args = Array.of_list (List.map (translate_expression file) exprs) in
+    Expression_constructor (loc, Longident.last ctor, args)
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -107,6 +111,10 @@ and translate_pattern file p =
     let patt = translate_pattern file p in
     let id = lid.txt in
     Pattern_alias (loc, patt, id)
+  | Tpat_construct (lid, _, patts) ->
+    let ctor = lid.txt in
+    let args = Array.of_list (List.map (translate_pattern file) patts) in
+    Pattern_constructor (loc, Longident.last ctor, args)
 
 and translate_structure_item file s =
   let loc = translate_location file s.str_loc in
@@ -120,6 +128,7 @@ and translate_structure_item file s =
     let patts = Array.map (fun b -> translate_pattern file b.vb_pat) bindings in
     let val_exps = Array.map (fun b -> translate_expression file b.vb_expr) bindings in
     Structure_value (loc, is_rec, patts, val_exps)
+  | Tstr_type (_, _) -> Structure_type loc
 
 and translate_structure file s =
   let items = Array.of_list (List.map (translate_structure_item file) s.str_items) in
@@ -212,6 +221,11 @@ let rec js_of_expression = function
   let js_expr = js_of_expression expr in
   let js_cases = Js.Unsafe.inject (Js.array (Array.map js_of_case cases)) in
   ctor_call "MLSyntax.Expression_match" [| js_loc ; js_expr ; js_cases |]
+| Expression_constructor (loc, ctor, args) ->
+  let js_loc = js_of_location loc in
+  let js_ctor = Js.Unsafe.inject (Js.string ctor) in
+  let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_expression args)) in
+  ctor_call "MLSyntax.Expression_constructor" [| js_loc ; js_ctor ; js_args |]
 
 and js_of_pattern = function
 | Pattern_any loc -> ctor_call "MLSyntax.Pattern_any" [| js_of_location loc |]
@@ -235,6 +249,11 @@ and js_of_pattern = function
   let js_patt = js_of_pattern patt in
   let js_id = Js.Unsafe.inject (Js.string id) in
   ctor_call "MLSyntax.Pattern_alias" [| js_loc ; js_patt ; js_id |]
+| Pattern_constructor (loc, ctor, args) ->
+  let js_loc = js_of_location loc in
+  let js_ctor = Js.Unsafe.inject (Js.string ctor) in
+  let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_pattern args)) in
+  ctor_call "MLSyntax.Pattern_constructor" [| js_loc ; js_ctor ; js_args |]
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in
@@ -252,6 +271,9 @@ and js_of_structure_item = function
   let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
   let js_val_exps = Js.Unsafe.inject (Js.array (Array.map js_of_expression val_exps)) in
   ctor_call "MLSyntax.Structure_value" [| js_loc ; js_rec ; js_patts ; js_val_exps |]
+| Structure_type loc ->
+  let js_loc = js_of_location loc in
+  ctor_call "MLSyntax.Structure_type" [| js_loc |]
 
 and js_of_structure = function
 | Structure (loc, items) ->

@@ -1375,7 +1375,27 @@ function runDebug() {
   reset_datalog();
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
-  MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
+  if(program.tag == "Structure") {
+    var ctx = Map.empty_map(function(a,b) { return a === b; });
+    var items = program.items;
+    var i = 0;
+
+    while(i < items.length) {
+      var res = MLInterpreter.run_structure_item(ctx, items[i]);
+
+      if(res.tag == "Some") {
+        ctx = res.value.ctx;
+      }
+
+      else {
+        console.log("Error");
+        break;
+      }
+
+      i = i + 1;
+    }
+  // MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
+  }
 }
 
 function run() {
@@ -1384,7 +1404,27 @@ function run() {
  try {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
-    MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
+    if(program.tag == "Structure") {
+      var ctx = Map.empty_map(function(a,b) { return a === b; });
+      var items = program.items;
+      var i = 0;
+
+      while(i < items.length) {
+        var res = MLInterpreter.run_structure_item(ctx, items[i]);
+
+        if(res.tag == "Some") {
+          ctx = res.value.ctx;
+        }
+
+        else {
+          console.log("Error");
+          break;
+        }
+
+        i = i + 1;
+      }
+    // MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
+    }
  } catch (e) {
    success = false;
    // alert("Error during the run");
@@ -1420,6 +1460,7 @@ function readSourceParseAndRun() {
    try {
      program = parseSource(code, initialSourceName);
    } catch (e) {
+     console.dir(e, { depth: null });
      return "Parse error";
    }
 
