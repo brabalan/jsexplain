@@ -156,6 +156,12 @@ and pattern_match ctx value patt = match patt with
       end
     | _ -> None
   end
+| Pattern_or (_, patt1, patt2) ->
+  begin
+    match pattern_match ctx value patt1 with
+    | Some ctx' -> Some ctx'
+    | None -> pattern_match ctx value patt2
+  end
 
 and pattern_match_many ctx value cases = match cases with
 | [] -> None

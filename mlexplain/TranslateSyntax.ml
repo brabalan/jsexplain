@@ -115,6 +115,10 @@ and translate_pattern file p =
     let ctor = lid.txt in
     let args = Array.of_list (List.map (translate_pattern file) patts) in
     Pattern_constructor (loc, Longident.last ctor, args)
+  | Tpat_or (p1, p2, _) ->
+    let patt1 = translate_pattern file p1 in
+    let patt2 = translate_pattern file p2 in
+    Pattern_or (loc, patt1, patt2)
 
 and translate_structure_item file s =
   let loc = translate_location file s.str_loc in
@@ -254,6 +258,11 @@ and js_of_pattern = function
   let js_ctor = Js.Unsafe.inject (Js.string ctor) in
   let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_pattern args)) in
   ctor_call "MLSyntax.Pattern_constructor" [| js_loc ; js_ctor ; js_args |]
+| Pattern_or (loc, patt1, patt2) ->
+  let js_loc = js_of_location loc in
+  let js_patt1 = js_of_pattern patt1 in
+  let js_patt2 = js_of_pattern patt2 in
+  ctor_call "MLSyntax.Pattern_or" [| js_loc ; js_patt1 ; js_patt2 |]
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in

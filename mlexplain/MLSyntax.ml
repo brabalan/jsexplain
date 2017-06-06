@@ -48,6 +48,7 @@ and pattern =
 | Pattern_variant of location * string * pattern option [@f loc, label, arg]
 | Pattern_alias of location * pattern * string [@f loc, patt, alias]
 | Pattern_constructor of location * string * pattern array [@f loc, ctor, args]
+| Pattern_or of location * pattern * pattern [@f loc, patt1, patt2]
 
 and case = {
   patt : pattern ;
