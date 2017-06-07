@@ -36,6 +36,7 @@ ASSEMBLY_JS_FILES := \
 	Set.unlog.js \
 	Map.unlog.js \
 	MLSyntax.unlog.js \
+	Vector.js \
 	Value.unlog.js \
 	ExecutionContext.unlog.js \
 	MLInterpreter.log.js
@@ -71,7 +72,7 @@ ALL_LINEOF := $(DISPLAYED:.ml=.token.js) $(DISPLAYED:.ml=.mlloc.js) $(DISPLAYED:
 %.ptoken.js: %.ml %.cmi $(MLTOJS_BIN)
 	$(MLTOJS) -mode ptoken -I $(STDLIB_DIR) $<
 
-assembly.js: $(ASSEMBLY_JS) $(ASSEMBLY_BIN)
+assembly.js: Vector.cmi $(ASSEMBLY_JS) $(ASSEMBLY_BIN)
 	$(ASSEMBLY) -o $@ $(ASSEMBLY_JS)
 
 displayed_sources.js: $(ALL_DISPLAYED) $(DISPLAYGEN_BIN)
@@ -100,7 +101,5 @@ mlexplain: assembly.js lineof.js displayed_sources.js frontend.js
 clean:
 	rm *.cmo || true
 	rm *.cmi || true
-	rm *.cmx || true
-	rm mlexplain.byte || true
-	rm *.js || true
+	rm `ls *.js | grep -v Vector.js` || true
 	rm *.byte || true
