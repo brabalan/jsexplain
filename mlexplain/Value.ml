@@ -26,6 +26,10 @@ and sumtype = {
 
 and record = (string, value) Map.map
 
+type binding =
+| Normal of value [@f normal_alloc]
+| Prealloc of MLSyntax.expression [@f prealloc]
+
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
   begin

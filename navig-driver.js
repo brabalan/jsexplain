@@ -715,23 +715,6 @@ function string_of_loc(loc) {
   }
 }
 
-function string_of_prim(v) {
-  switch (v.tag) {
-  case "Coq_prim_undef":
-    return "undefined";
-  case "Coq_prim_null":
-    return "null";
-  case "Coq_prim_bool":
-    return (v.value) ? "true" : "false";
-  case "Coq_prim_number":
-    return "" + v.value;
-  case "Coq_prim_string":
-    return "\"" + html_escape(v.value) + "\"";
-  default:
-    throw "unrecognized tag in string_of_prim";
-  }
-}
-
 function string_of_option(string_of_elem, opt_elem) {
   switch (opt_elem.tag) {
   case "None":
@@ -792,103 +775,72 @@ function string_of_mutability(mutability) {
                                  attributes_accessor_configurable : bool }
 */
 
-function show_object(state, loc, target, depth) {
-   var t = $("#" + target);
-   if (depth < 0) {
-     t.append("&lt;hidden&gt;");
-     return;
-   }
-   var obj_opt = JsCommonAux.object_binds_option(state, loc);
-   if (obj_opt.tag != "Some") throw "show_object: unbound object";
-   var obj = obj_opt.value;
-   var props = obj.object_properties_;
-   var key_value_pair_array = encoded_list_to_array(HeapStr.to_list(props));
-   // 
-   var is_global = (string_of_loc(loc) == "global");
-
-   key_value_pair_array.push(["[[Prototype]]", obj.object_proto_]);
-
-   for (var j = 0; j < key_value_pair_array.length; j++) {
-      var i = key_value_pair_array.length-j-1;
-      var prop_name = key_value_pair_array[i][0];
-      var attribute = key_value_pair_array[i][1];
-
-      var targetsub = fresh_id();
-      t.append("<div style='margin-left:1em' id='" + targetsub + "'></div>");
-      $("#" + targetsub).html("&ndash; " + html_escape(prop_name) + ": ");
-
-      switch (attribute.tag) {
-        case "Coq_attributes_data_of":
-          var attr = attribute.value;
-          var prop_value = attr.attributes_data_value;
-          show_value(state, prop_value, targetsub, depth-1);
-
-          break;
-        case "Coq_attributes_accessor_of": 
-          var attr = attribute.value;
-          $("#" + targetsub).append(" &lt;accessor&gt; ");
-          // TODO: complete
-
-          break;
-        case "Coq_value_prim":
-        case "Coq_value_object":
-          show_value(state, attribute, targetsub, depth-1);
-          break;
-
-        default: 
-          console.log(attribute);
-          throw "invalid attribute.tag";
-      }
-   }
-
-   // special display for empty objects
-   if (key_value_pair_array.length === 0) {
-     t.append("(empty object)");
-   }
-
-   // custom fields
-   var props = obj.object_code_;
-   if (obj.object_code_.tag == "Some") {
-      var targetfunc = fresh_id();
-      t.append("<div style='margin-left:1em' id='" + targetfunc + "'>&ndash; &lt;Function&gt;</div>");
-      if (obj.object_scope_.tag == "Some") {
-         var func_lexical_env = obj.object_scope_.value;
-         var targetscope = fresh_id();
-         $("#" + targetfunc).append("<div style='margin-left:1em'>&ndash; scope:<div style='margin-left:1em' id='" + targetscope + "'></div></div>");
-         show_lexical_env(state, func_lexical_env, targetscope);
-      }
-   }
-}
-
 function show_value(state, v, target, depth) {
   var t = $("#" + target);
-  switch (v.tag) {
-  case "Coq_value_prim":
-    var s = string_of_prim(v.value);
-    t.append(s);
-    return;
-  case "Coq_value_object":
-     var loc = v.value;
-     var obj_target = fresh_id();
-     t.append("<span class='heap_link'><a onclick=\"handlers['" + obj_target + "']()\" >&lt;Object&gt;(" + string_of_loc(loc) + ")</a><span id='" + obj_target + "'></span></span>"); 
-     function handler_close() {
-       handlers[obj_target] = handler_open;
-       $("#" + obj_target).html("");
-       interpreter.focus();
-     }
-     function handler_open() {
-       handlers[obj_target] = handler_close;
-       show_object(state, loc, obj_target, 1);
-       interpreter.focus();
-     };
-     // initial opening of the object
-     if (depth > 0) {
-       handlers[obj_target] = handler_close;
-       show_object(state, loc, obj_target, depth);
-     } else {
-       handler_close();
-     }
-     return;
+
+  var sepBy = function(sep) {
+    return function(fst, value) {
+      t.append(sep);
+      show_value(state, value, target, depth);
+    };
+  };
+
+  switch(v.tag) {
+    case "Value_int":
+    case "Value_float":
+      t.append(v.value);
+      break;
+    case "Value_char":
+      t.append("'" + v.value + "'");
+      break;
+    case "Value_string":
+      t.append('"' + v.value + '"');
+      break;
+    case "Value_tuple":
+      t.append("( ");
+      show_value(state, v.value[0], target, depth);
+      MLArray.fold(sepBy(", "), undefined, v.value.slice(1));
+      t.append(" )");
+      break;
+    case "Value_array":
+      t.append("[| ");
+      show_value(state, v.value[0], target, depth);
+      MLArray.fold(sepBy(" ; "), undefined, v.value.slice(1));
+      t.append(" |]");
+      break;
+    case "Value_fun":
+      t.append("&lt;function&gt;");
+      break;
+    case "Value_variant":
+      t.append("`" + v.value.label + " ");
+      var opt = v.value.value_opt;
+      if(opt.tag == "Some")
+        if(opt.value.tag == "Value_variant" || opt.value.tag == "Value_custom") {
+          t.append("(");
+          show_value(state, v.value.value_opt.value, target, depth);
+          t.append(")");
+        }
+        
+        else
+          show_value(state, v.value.value_opt.value, target, depth);
+      break;
+    case "Value_custom":
+      switch(v.value.tag) {
+        case "Sumtype":
+          var sum = v.value.sumtype;
+          t.append(sum.constructor + " ");
+          if(sum.args.length > 1) {
+            t.append("( ");
+            show_value(state, sum.args[0], target, depth);
+            MLArray.fold(sepBy(", "), undefined, sum.args.slice(1));
+            t.append(" )");
+          }
+
+          else if(sum.args.length == 1)
+            show_value(state, sum.args[0], target, depth);
+          break;
+        }
+        break;
   default:
     throw "unrecognized tag in show_value";
   }
@@ -942,8 +894,36 @@ function show_lexical_env(state, lexical_env, target) {
    }
 }
 
-
 function show_execution_ctx(state, execution_ctx, target) {
+  var t = $("#" + target);
+  var lex_env = execution_ctx.execution_ctx_lexical_env;
+
+  var show_binding = function(pair) {
+    var name = pair.key;
+    var binding = pair.value;
+    var value = undefined;
+
+    if(binding.tag == "Prealloc") {
+      var value_opt = MLInterpreter.run_expression(execution_ctx, binding.prealloc);
+
+      if(value_opt.tag == "Some")
+        value = value_opt.value;
+      else
+        return;
+    }
+
+    else
+      value = binding.normal_alloc;
+
+    t.append(name + " = ");
+    show_value(state, value, target, 0);
+    t.append("<br/>");
+}
+
+  MLList.map(show_binding, lex_env.bindings);
+}
+
+/*function show_execution_ctx(state, execution_ctx, target) {
   var t = $("#" + target);
 
   // strictness
@@ -964,7 +944,7 @@ function show_execution_ctx(state, execution_ctx, target) {
   var variable_env_target = fresh_id();
   t.append("<div><b>variable-env:</b> <div style='margin-left: 1em' id='" + variable_env_target + "'></div></div>");
   show_lexical_env(state, execution_ctx.execution_ctx_variable_env, variable_env_target);
-}
+}*/
 
 
 
@@ -1021,9 +1001,12 @@ function interp_val_is_list(v) {
   
 function interp_val_is_syntax(v) {
   return has_tag_in_set(v, ["Expression_constant", "Expression_ident", "Expression_let", "Expression_tuple",
-    "Expression_function", "Expression_match", "Expression_apply", "Expression_variant",
+    "Expression_function", "Expression_match", "Expression_apply", "Expression_variant", "Expression_array",
+    "Expression_constructor",
     "Constant_integer", "Constant_float", "Constant_char", "Constant_string",
-    "Pattern_any", "Pattern_constant", "Pattern_var", "Pattern_tuple"]);
+    "Pattern_any", "Pattern_constant", "Pattern_var", "Pattern_tuple", "Pattern_tuple", "Pattern_array",
+    "Pattern_variant", "Pattern_alias", "Pattern_constructor", "Pattern_or",
+    "Structure_eval", "Structure_value", "Structure_type"]);
 }
 
 function interp_val_is_state(v) {
@@ -1216,7 +1199,7 @@ function updateSelection() {
      // console.log(source_loc_selected);
 
      // source heap/env panel
-     if (item.state === undefined || item.execution_ctx === undefined) {
+     if (/*item.state === undefined ||*/ item.execution_ctx === undefined) {
        $("#disp_env").html("<undefined state or context>");
      } else {
        show_execution_ctx(item.state, item.execution_ctx, "disp_env");
@@ -1376,7 +1359,8 @@ function runDebug() {
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
   if(program.tag == "Structure") {
-    var ctx = Map.empty_map(function(a,b) { return a === b; });
+    var ctx = ExecutionContext.empty;
+    // var ctx = Map.empty_map(function(a,b) { return a === b; });
     var items = program.items;
     var i = 0;
 
@@ -1405,7 +1389,8 @@ function run() {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
     if(program.tag == "Structure") {
-      var ctx = Map.empty_map(function(a,b) { return a === b; });
+      var ctx = ExecutionContext.empty;
+      // var ctx = Map.empty_map(function(a,b) { return a === b; });
       var items = program.items;
       var i = 0;
 

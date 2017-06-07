@@ -205,7 +205,7 @@ var array_fold = function(f, acc, ary) {
     throw "array_fold invalid arguments";
 
   var a = acc;
-  for(i = 0; i < ary.length; i++)
+  for(var i = 0; i < ary.length; i++)
     a = f(a, ary[i]);
   return a;
 }
@@ -226,7 +226,7 @@ var array_make = function(i, v) {
   if (typeof(i) != "number")
     throw "array_length invalid arguments";
   var ary = [];
-  for(x = 0; x < i; x++)
+  for(var x = 0; x < i; x++)
     ary = ary.concat([v]);
   return ary;
 }
@@ -235,7 +235,7 @@ var array_map = function(f, ary) {
   if (typeof(f) != "function" || typeof(ary) != "object")
     throw "array_map invalid arguments";
   var n_ary = ary.slice();
-  for(i = 0; i < ary.length; i++)
+  for(var i = 0; i < ary.length; i++)
     n_ary[i] = f(ary[i]);
   return n_ary;
 }

@@ -1,13 +1,9 @@
 open MLSyntax
 open Value
 
-type binding =
-| Normal of value [@f normal_alloc]
-| Prealloc of expression [@f prealloc]
-
 let min a b = if a <= b then a else b
 
-type environment = (string, binding) Map.map
+type environment = ExecutionContext.execution_ctx
 
 type structure_item_result = {
   value : value ;
@@ -22,7 +18,7 @@ let run_constant = function
 
 let rec run_expression ctx _term_ = match _term_ with
 | Expression_constant (_, c) -> Some (run_constant c)
-| Expression_ident (_, id) -> Option.bind (Map.find id ctx) (fun b -> value_of ctx b)
+| Expression_ident (_, id) -> Option.bind (ExecutionContext.find id ctx) (fun b -> value_of ctx b)
 | Expression_let (_, is_rec, patts, exp_ary, e2) ->
   if is_rec then
     let prealloc p = match p with
@@ -31,7 +27,7 @@ let rec run_expression ctx _term_ = match _term_ with
     let exps = MLList.of_array exp_ary in
     Option.bind (MLArray.lift_option (MLArray.map prealloc patts)) (fun id_ary ->
     let ids = MLList.of_array id_ary in
-    let func ctx id exp = Map.add id (Prealloc exp) ctx in
+    let func ctx id exp = ExecutionContext.add id (Prealloc exp) ctx in
     let ctx' = MLList.foldl2 func ctx ids exps in
     run_expression ctx' e2)
   else
@@ -95,7 +91,7 @@ and value_of ctx b = match b with
 
 and pattern_match ctx value patt = match patt with
 | Pattern_any _ -> Some ctx
-| Pattern_var (_, id) -> Some (Map.add id (Normal value) ctx)
+| Pattern_var (_, id) -> Some (ExecutionContext.add id (Normal value) ctx)
 | Pattern_constant (_, c) ->
   let v1 = run_constant c in
   if value_eq v1 value then Some ctx else None
@@ -141,7 +137,7 @@ and pattern_match ctx value patt = match patt with
   end
 | Pattern_alias (_, patt, id) ->
   Option.bind (pattern_match ctx value patt) (fun ctx' ->
-  Some (Map.add id (Normal value) ctx'))
+  Some (ExecutionContext.add id (Normal value) ctx'))
 | Pattern_constructor (_, ctor, args) ->
   begin
     match value with
@@ -204,10 +200,10 @@ let run_structure_item ctx _term_ = match _term_ with
     let prealloc_vars = MLArray.map prealloc patts in
     Option.bind (MLArray.lift_option prealloc_vars) (fun id_ary ->
     let ids = MLList.of_array id_ary in
-    let func ctx id exp = Map.add id (Prealloc exp) ctx in
+    let func ctx id exp = ExecutionContext.add id (Prealloc exp) ctx in
     let ctx' = MLList.foldl2 func ctx ids exps in
     let id = MLArray.get id_ary (MLArray.length id_ary - 1) in
-    Option.bind (Map.find id ctx') (fun binding ->
+    Option.bind (ExecutionContext.find id ctx') (fun binding ->
     Option.bind (value_of ctx' binding) (fun v ->
     Some { value = v ; ctx = ctx' })))
     (* Some { value = Value_int 0 ; ctx = ctx' }) *)
@@ -220,7 +216,7 @@ let run_structure_item ctx _term_ = match _term_ with
     let patt_list = MLList.of_array patts in
     let exps = MLList.of_array exp_ary in
     Option.bind (MLList.foldl2 func (Some ctx) patt_list exps) (fun ctx' ->
-    let elems = Map.elems ctx' in
+    let elems = Map.elems (ExecutionContext.execution_ctx_lexical_env ctx') in
     let rev_elems = MLList.rev elems in
     let last_opt = match rev_elems with
     | [] -> None
