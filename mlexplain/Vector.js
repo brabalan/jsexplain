@@ -12,8 +12,20 @@ var Vector = (function() {
     return vec.ary[idx];
   }
 
+  var find = function(vec, idx) {
+    if(vec.length <= idx)
+      return { tag: "None" };
+
+    var v = get(vec, idx);
+    if(v == undefined)
+      return { tag: "None" };
+    else
+      return { tag: "Some", value: v };
+  }
+
   return {
     empty: empty,
     append: append,
-    get: get};
+    get: get,
+    find: find};
 })();

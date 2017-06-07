@@ -908,11 +908,12 @@ function show_execution_ctx(state, execution_ctx, target) {
 
   var show_binding = function(pair) {
     var name = pair.key;
-    var binding = pair.value;
+    var idx = pair.value;
+    var binding = Vector.get(state, idx);
     var value = undefined;
 
     if(binding.tag == "Prealloc") {
-      var value_opt = MLInterpreter.run_expression(execution_ctx, binding.prealloc);
+      var value_opt = MLInterpreter.run_expression(state, execution_ctx, binding.prealloc);
 
       if(value_opt.tag == "Some")
         value = value_opt.value;
@@ -1018,8 +1019,8 @@ function interp_val_is_syntax(v) {
 }
 
 function interp_val_is_state(v) {
-  // Assume "has a state_object_heap" field iff "is a state"
-  return v.state_object_heap !== undefined;
+  // Assume "has a ary" field iff "is a state"
+  return v.ary !== undefined;
 }
 
 function interp_val_is_execution_ctx(v) {
@@ -1366,7 +1367,7 @@ function runDebug() {
   reset_datalog();
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
-  MLInterpreter.run_structure(ExecutionContext.empty, program);
+  MLInterpreter.run_structure(Vector.empty(), ExecutionContext.empty, program);
 }
 
 function run() {
@@ -1375,7 +1376,7 @@ function run() {
  try {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
-    MLInterpreter.run_structure(ExecutionContext.empty, program);
+    MLInterpreter.run_structure(Vector.empty(), ExecutionContext.empty, program);
  } catch (e) {
    success = false;
    // alert("Error during the run");

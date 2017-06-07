@@ -1,5 +1,5 @@
 type execution_ctx = {
-  execution_ctx_lexical_env : (string, Value.binding) Map.map ;
+  execution_ctx_lexical_env : (string, int) Map.map ;
   execution_ctx_strict : bool
 }
 
