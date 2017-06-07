@@ -192,21 +192,27 @@ and pattern_match_array ctx ary patts =
 let run_structure_item ctx _term_ = match _term_ with
 | Structure_eval (_, e) -> Option.bind (run_expression ctx e) (fun v -> Some { value = v ; ctx = ctx })
 | Structure_value (_, is_rec, patts, exp_ary) ->
+  (* The data is recursive, a Prealloc binding is generated *)
   if is_rec then
+    (* Prealloc only accept variable patterns *)
     let prealloc p = match p with
     | Pattern_var (_, id) -> Some id
     | _ -> None in
     let exps = MLList.of_array exp_ary in
     let prealloc_vars = MLArray.map prealloc patts in
+    (* MLArray.lift_option : 'a option list -> 'a list option
+     * Some id_ary = MLArray.lift_option prealloc_vars *)
     Option.bind (MLArray.lift_option prealloc_vars) (fun id_ary ->
     let ids = MLList.of_array id_ary in
+    (* Auxiliary function adding a Prealloc of exp bound to id in the given context *)
     let func ctx id exp = ExecutionContext.add id (Prealloc exp) ctx in
+    (* Foldl of the lists simultaneously using func and the current context *)
     let ctx' = MLList.foldl2 func ctx ids exps in
+    (* Return the last value bound by this toplevel phrase *)
     let id = MLArray.get id_ary (MLArray.length id_ary - 1) in
     Option.bind (ExecutionContext.find id ctx') (fun binding ->
     Option.bind (value_of ctx' binding) (fun v ->
     Some { value = v ; ctx = ctx' })))
-    (* Some { value = Value_int 0 ; ctx = ctx' }) *)
   else
     let func ctx_opt patt exp =
       (* Some ctx = ctx_opt
@@ -215,7 +221,9 @@ let run_structure_item ctx _term_ = match _term_ with
       Option.bind (run_expression ctx exp) (fun v -> pattern_match ctx v patt)) in
     let patt_list = MLList.of_array patts in
     let exps = MLList.of_array exp_ary in
+    (* Generate a new environment binding patterns' variable to their respective value *)
     Option.bind (MLList.foldl2 func (Some ctx) patt_list exps) (fun ctx' ->
+    (* Get the value to return *)
     let elems = Map.elems (ExecutionContext.execution_ctx_lexical_env ctx') in
     let rev_elems = MLList.rev elems in
     let last_opt = match rev_elems with
@@ -225,11 +233,6 @@ let run_structure_item ctx _term_ = match _term_ with
     Option.bind (value_of ctx' last) (fun v ->
     Some { value = v ; ctx = ctx' })))
 | Structure_type _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
-
-(* let run_structure_item ctx _term_ = match _term_ with
-| Structure_eval (_, e) -> Option.bind (run_expression ctx e) (fun v -> Some { value = v ; ctx = ctx })
-| Structure_type _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
-| Structure_value _ -> Some { value = Value_tuple [| |] ; ctx = ctx } *)
 
 let run_structure ctx _term_ =
   let func opt _term_ =

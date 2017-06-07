@@ -836,8 +836,16 @@ function show_value(state, v, target, depth) {
             t.append(" )");
           }
 
-          else if(sum.args.length == 1)
-            show_value(state, sum.args[0], target, depth);
+          else if(sum.args.length == 1) {
+            if(sum.args[0].tag == "Value_variant" || sum.args[0].tag == "Value_custom") {
+              t.append("(");
+              show_value(state, sum.args[0], target, depth);
+              t.append(")");
+            }
+            
+            else
+              show_value(state, sum.args[0], target, depth);
+          }
           break;
         }
         break;
@@ -1358,28 +1366,7 @@ function runDebug() {
   reset_datalog();
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
-  if(program.tag == "Structure") {
-    var ctx = ExecutionContext.empty;
-    // var ctx = Map.empty_map(function(a,b) { return a === b; });
-    var items = program.items;
-    var i = 0;
-
-    while(i < items.length) {
-      var res = MLInterpreter.run_structure_item(ctx, items[i]);
-
-      if(res.tag == "Some") {
-        ctx = res.value.ctx;
-      }
-
-      else {
-        console.log("Error");
-        break;
-      }
-
-      i = i + 1;
-    }
-  // MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
-  }
+  MLInterpreter.run_structure(ExecutionContext.empty, program);
 }
 
 function run() {
@@ -1388,28 +1375,7 @@ function run() {
  try {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
-    if(program.tag == "Structure") {
-      var ctx = ExecutionContext.empty;
-      // var ctx = Map.empty_map(function(a,b) { return a === b; });
-      var items = program.items;
-      var i = 0;
-
-      while(i < items.length) {
-        var res = MLInterpreter.run_structure_item(ctx, items[i]);
-
-        if(res.tag == "Some") {
-          ctx = res.value.ctx;
-        }
-
-        else {
-          console.log("Error");
-          break;
-        }
-
-        i = i + 1;
-      }
-    // MLInterpreter.run_structure(Map.empty_map(function(a,b) { return a === b; }), program);
-    }
+    MLInterpreter.run_structure(ExecutionContext.empty, program);
  } catch (e) {
    success = false;
    // alert("Error during the run");

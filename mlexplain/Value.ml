@@ -26,10 +26,12 @@ and sumtype = {
 
 and record = (string, value) Map.map
 
+(** Type used two handle bindings, Prealloc is useful for recursive functions *)
 type binding =
 | Normal of value [@f normal_alloc]
 | Prealloc of MLSyntax.expression [@f prealloc]
 
+(** Compare two values *)
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
   begin

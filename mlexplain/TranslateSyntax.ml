@@ -294,6 +294,7 @@ and js_of_structure = function
 let () =
   Js.export "MLExplain"
   (object%js
+    (** Parse an OCaml expression *)
     method parseExpr name str =
       let filename = Js.to_string name in
       let s = Js.to_string str in
@@ -302,6 +303,8 @@ let () =
       let typed_ast = Typecore.type_expression Env.empty past in
       let ast = translate_expression filename typed_ast in
       js_of_expression ast
+
+    (** Parse an OCaml file *)
     method parseStructure name str =
       let filename = Js.to_string name in
       let s = Js.to_string str in
