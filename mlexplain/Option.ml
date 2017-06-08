@@ -7,6 +7,10 @@ let bind opt f = match opt with
 | Some v -> f v
 | None -> None
 
+let map f opt = match opt with
+| Some v -> Some (f v)
+| None -> None
+
 (** Equality-test function using a helper function to test the inner value *)
 let eq func o1 o2 = match o1 with
 | None ->

@@ -23,9 +23,14 @@ var Vector = (function() {
       return { tag: "Some", value: v };
   }
 
+  var set = function(vec, idx, v) {
+    vec.ary[idx] = v;
+  }
+
   return {
     empty: empty,
     append: append,
     get: get,
-    find: find};
+    find: find,
+    set: set};
 })();

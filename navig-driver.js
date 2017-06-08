@@ -847,59 +847,24 @@ function show_value(state, v, target, depth) {
               show_value(state, sum.args[0], target, depth);
           }
           break;
-        }
-        break;
-  default:
-    throw "unrecognized tag in show_value";
-  }
-}
+        case "Record":
+          var rec = v.value.record;
+          t.append("{ ");
+          var map = Map.map(function(idx) { return Vector.get(state, idx); }, rec).bindings;
+          var show = function(fst, pair) {
+            t.append(" ; " + pair.key + " = ");
+            show_value(state, pair.value.normal_alloc, target, depth);
+          }
 
-function show_decl_env_record(state, env_record_decl, target) {
-   // env_record_decl : (string, mutability * value) Heap.heap
-   var t = $("#" + target);
-   var items_array = encoded_list_to_array(HeapStr.to_list(env_record_decl));
-   for (var i = 0; i < items_array.length; i++) {
-      var var_name = items_array[i][0];
-      var mutability = items_array[i][1][0];
-      var value = items_array[i][1][1];
-      var value_target = fresh_id();
-      t.append("<div id='" + value_target + "'>	&rarr; " + html_escape(var_name) + ":</div>");
-      // + " (" + string_of_mutability(mutability) + ")" +
-      show_value(state, value, value_target, 0);
-   }
-}
-
-function show_lexical_env(state, lexical_env, target) {
-   var t = $("#" + target);
-   // var env_record_heap = state.state_env_record_heap;
-   var env_loc_array = encoded_list_to_array(lexical_env);
-   for (var i = 0; i < env_loc_array.length; i++) {
-      var env_loc = env_loc_array[i];
-      var env_record_opt = JsCommonAux.env_record_binds_option(state, env_loc);
-      if (env_record_opt.tag != "Some") throw "show_object: unbound object";
-      var env_record = env_record_opt.value;
-
-      switch (env_record.tag) {
-        case "Coq_env_record_decl":
-          var env_record_decl = env_record.value;
-          var items_target = fresh_id();
-          t.append("<div><b>&bull; environment-record-declaration</b>: <div style='margin-left: 1em' id='" + items_target + "'></div></div>");
-          show_decl_env_record(state, env_record_decl, items_target)
-          break;
-        case "Coq_env_record_object":   
-          var object_loc = env_record.value;
-          var obj_value = { tag: "Coq_value_object", value: object_loc };
-          var provide_this = env_record.provide_this;
-          var obj_target = fresh_id();
-          t.append("<div id='" + obj_target + "'><b>&bull; environment-record-object</b>:</div>");
-          // (" + ((provide_this) ? "" : "not ") + "providing 'this'):
-          show_value(state, obj_value, obj_target, 0);
-          // show_object(state, object_loc, obj_target, 1);
-          break;
-        default: 
-          throw "invalid env_record.tag";
+          t.append(map.head.key + " = ");
+          show_value(state, map.head.value.normal_alloc, target, depth);
+          MLList.foldl(show, undefined, map.tail);
+          t.append(" }");
       }
-   }
+      break;
+    default:
+      throw "unrecognized tag in show_value";
+  }
 }
 
 function show_execution_ctx(state, execution_ctx, target) {

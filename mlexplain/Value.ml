@@ -17,14 +17,15 @@ and variant = {
 
 and custom_type =
 | Sumtype of sumtype [@f sumtype]
-(*| Record of record [@f record]*)
+| Record of record [@f record]
 
 and sumtype = {
   constructor : string ;
   args : value array
 }
 
-and record = (string, value) Map.map
+(** Map associating a name to an index in the program's state *)
+and record = (string, int) Map.map
 
 (** Type used two handle bindings, Prealloc is useful for recursive functions *)
 type binding =

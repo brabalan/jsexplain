@@ -38,6 +38,7 @@ type expression =
 | Expression_apply of location * expression * expression array [@f loc, func, args]
 | Expression_match of location * expression * case array [@f loc, expr, cases]
 | Expression_constructor of location * string * expression array [@f loc, ctor, args]
+| Expression_record of location * binding array * expression option [@f loc, bindings, base]
 
 and pattern =
 | Pattern_any of location [@f loc]
@@ -52,6 +53,11 @@ and pattern =
 
 and case = {
   patt : pattern ;
+  expr : expression
+}
+
+and binding = {
+  name : string ;
   expr : expression
 }
 

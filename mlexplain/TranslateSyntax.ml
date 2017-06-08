@@ -2,6 +2,7 @@ open Lexing
 open Location
 open Longident
 open Asttypes
+open Types
 open Parsetree
 open Typedtree
 open MLSyntax
@@ -87,6 +88,13 @@ let rec translate_expression file e =
     let ctor = lid.txt in
     let args = Array.of_list (List.map (translate_expression file) exprs) in
     Expression_constructor (loc, Longident.last ctor, args)
+  | Texp_record r ->
+    let conv  (lbl, rec_def) = match rec_def with
+    | Overridden (_, expr) -> { name = lbl.lbl_name ; expr = translate_expression file expr }
+    | Kept _ -> { name = "" ; expr = Expression_ident (loc, "") } in
+    let bindings = Array.map conv r.fields in
+    let base' = Option.bind r.extended_expression (fun base -> Some (translate_expression file base)) in
+    Expression_record (loc, bindings, base')
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -230,6 +238,11 @@ let rec js_of_expression = function
   let js_ctor = Js.Unsafe.inject (Js.string ctor) in
   let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_expression args)) in
   ctor_call "MLSyntax.Expression_constructor" [| js_loc ; js_ctor ; js_args |]
+| Expression_record (loc, bindings, base) ->
+  let js_loc = js_of_location loc in
+  let js_bindings = Js.Unsafe.inject (Js.array (Array.map js_of_binding bindings)) in
+  let js_base = js_of_option js_of_expression base in
+  ctor_call "MLSyntax.Expression_record" [| js_loc ; js_bindings ; js_base |]
 
 and js_of_pattern = function
 | Pattern_any loc -> ctor_call "MLSyntax.Pattern_any" [| js_of_location loc |]
@@ -268,6 +281,11 @@ and js_of_case case =
   let js_patt = js_of_pattern case.patt in
   let js_expr = js_of_expression case.expr in
   Js.Unsafe.obj [| ("patt", js_patt) ; ("expr", js_expr) |]
+
+and js_of_binding b =
+  let js_name = Js.Unsafe.inject (Js.string b.name) in
+  let js_expr = js_of_expression b.expr in
+  Js.Unsafe.obj [| ("name", js_name) ; ("expr", js_expr) |]
 
 and js_of_structure_item = function
 | Structure_eval (loc, expr) ->

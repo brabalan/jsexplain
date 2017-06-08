@@ -88,6 +88,30 @@ let rec run_expression s ctx _term_ = match _term_ with
   Option.bind (MLArray.lift_option value_opts) (fun values ->
   let sum = Sumtype { constructor = ctor ; args = values } in
   Some (Value_custom sum))
+| Expression_record (_, bindings, base_opt) ->
+  let func map_opt binding =
+    Option.bind map_opt (fun map ->
+    Option.bind (run_expression s ctx binding.expr) (fun value ->
+    let idx = Vector.append s (Normal value) in
+    Some (Map.add binding.name idx map))) in
+  let string_eq s1 s2 = string_compare s1 s2 === 0 in
+  let map_from_value s = match s with
+  | Value_custom c ->
+    begin
+      match c with
+      | Record r -> r
+      | _ -> Map.empty_map string_eq
+    end
+  | _ -> Map.empty_map string_eq in
+  let base_map = match base_opt with
+  | None -> Map.empty_map string_eq
+  | Some base ->
+    match run_expression s ctx base with
+    | Some v -> map_from_value v
+    | None -> Map.empty_map string_eq in
+  Option.bind (MLArray.fold func (Some base_map) bindings) (fun map ->
+  let r = Record map in
+  Some (Value_custom r))
 
 and value_of s ctx b = match b with
 | Normal v -> Some v
@@ -156,6 +180,7 @@ and pattern_match s ctx value patt = match patt with
             pattern_match_array s ctx sum.args args
           else
             None
+        | Record _ -> None
       end
     | _ -> None
   end
