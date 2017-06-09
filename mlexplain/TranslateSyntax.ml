@@ -364,7 +364,8 @@ let () =
             loc_ghost = false
           }
         | [] -> Location.none (* absurd *) in
-      let (typed_ast, _, _) = Typemod.type_structure Env.empty past (structure_loc past) in
+      let (env, _) = Predef.build_initial_env (Env.add_type ~check:true) (Env.add_extension ~check:true) Env.empty in
+      let (typed_ast, _, _) = Typemod.type_structure env past (structure_loc past) in
       let struct_ = translate_structure filename typed_ast in
       js_of_structure struct_
   end)
