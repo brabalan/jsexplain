@@ -139,6 +139,14 @@ let rec run_expression s ctx _term_ = match _term_ with
       | _ -> None
     end
   | _ -> None)
+| Expression_ifthenelse (_, cond, e1, e2) ->
+  Option.bind (run_expression s ctx cond) (fun cond_val ->
+    if is_sumtype_ctor "true" cond_val then
+      run_expression s ctx e1
+    else
+      match e2 with
+      | Some e -> run_expression s ctx e
+      | None -> Some nil)
 
 and value_of s ctx b = match b with
 | Normal v -> Some v

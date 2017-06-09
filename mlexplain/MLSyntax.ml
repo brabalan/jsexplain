@@ -41,6 +41,7 @@ type expression =
 | Expression_record of location * binding array * expression option [@f loc, bindings, base]
 | Expression_field of location * expression * string [@f loc, record, fieldname]
 | Expression_setfield of location * expression * string * expression [@f loc, record, fieldname, expr]
+| Expression_ifthenelse of location * expression * expression * expression option [@f loc, cond, e1, e2]
 
 and pattern =
 | Pattern_any of location [@f loc]

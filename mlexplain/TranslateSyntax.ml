@@ -108,6 +108,11 @@ let rec translate_expression file e =
     let fieldname = lbl.lbl_name in
     let expr = translate_expression file exp in
     Expression_setfield (loc, record, fieldname, expr)
+  | Texp_ifthenelse (c, t, e) ->
+    let cond = translate_expression file c in
+    let e1 = translate_expression file t in
+    let e2 = Option.map (fun e -> translate_expression file e) e in
+    Expression_ifthenelse (loc, cond, e1, e2)
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -267,6 +272,12 @@ let rec js_of_expression = function
   let js_fieldname = Js.Unsafe.inject (Js.string fieldname) in
   let js_expr = js_of_expression expr in
   ctor_call "MLSyntax.Expression_setfield" [| js_loc ; js_record ; js_fieldname ; js_expr |]
+| Expression_ifthenelse (loc, cond, e1, e2) ->
+  let js_loc = js_of_location loc in
+  let js_cond = js_of_expression cond in
+  let js_e1 = js_of_expression e1 in
+  let js_e2 = js_of_option js_of_expression e2 in
+  ctor_call "MLSyntax.Expression_ifthenelse" [| js_loc ; js_cond ; js_e1 ; js_e2 |]
 
 and js_of_pattern = function
 | Pattern_any loc -> ctor_call "MLSyntax.Pattern_any" [| js_of_location loc |]

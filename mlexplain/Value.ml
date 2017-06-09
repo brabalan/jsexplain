@@ -111,3 +111,14 @@ and sumtype_eq s1 s2 =
   let t1 = Value_tuple s1.args in
   let t2 = Value_tuple s2.args in
   s1.constructor === s2.constructor && value_eq t1 t2
+
+let nil = Value_custom (Sumtype { constructor = "()" ; args = [| |] })
+
+let is_sumtype_ctor ctor v = match v with
+| Value_custom c ->
+  begin
+    match c with
+    | Sumtype s -> ctor === s.constructor
+    | _ -> false
+  end
+| _ -> false
