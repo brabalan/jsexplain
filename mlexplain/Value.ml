@@ -122,3 +122,30 @@ let is_sumtype_ctor ctor v = match v with
     | _ -> false
   end
 | _ -> false
+
+let do_sumtype value func = match value with
+| Value_custom custom ->
+  begin
+    match custom with
+    | Sumtype s -> func s
+    | _ -> None
+  end
+| _ -> None
+
+let do_record value func = match value with
+| Value_custom custom ->
+  begin
+    match custom with
+    | Record r -> func r
+    | _ -> None
+  end
+| _ -> None
+
+let do_record_with_default value dflt func = match value with
+| Value_custom custom ->
+  begin
+    match custom with
+    | Record r -> func r
+    | _ -> dflt
+  end
+| _ -> dflt

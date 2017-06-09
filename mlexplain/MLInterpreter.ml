@@ -95,14 +95,7 @@ let rec run_expression s ctx _term_ = match _term_ with
     let idx = Vector.append s (Normal value) in
     Some (Map.add binding.name idx map))) in
   let string_eq s1 s2 = string_compare s1 s2 === 0 in
-  let map_from_value s = match s with
-  | Value_custom c ->
-    begin
-      match c with
-      | Record r -> r
-      | _ -> Map.empty_map string_eq
-    end
-  | _ -> Map.empty_map string_eq in
+  let map_from_value v = do_record_with_default v (Map.empty_map string_eq) (fun r -> r) in
   let base_map = match base_opt with
   | None -> Map.empty_map string_eq
   | Some base ->
@@ -114,31 +107,21 @@ let rec run_expression s ctx _term_ = match _term_ with
   Some (Value_custom r))
 | Expression_field (_, record, fieldname) ->
   Option.bind (run_expression s ctx record) (fun value ->
-  match value with
-  | Value_custom custom ->
-    begin
-      match custom with
-      | Record record ->
-        Option.bind (Map.find fieldname record) (fun idx ->
-        Option.bind (Vector.find s idx) (fun binding ->
-        value_of s ctx binding))
-      | _ -> None
-    end
-  | _ -> None)
+  do_record value (fun record ->
+    (* Some idx = Map.find fieldname record
+     * Some binding = Vector.find s idx *)
+    Option.bind (Map.find fieldname record) (fun idx ->
+    Option.bind (Vector.find s idx) (fun binding ->
+    value_of s ctx binding))))
 | Expression_setfield (_, record, fieldname, expr) ->
   Option.bind (run_expression s ctx record) (fun value ->
-  match value with
-  | Value_custom custom ->
-    begin
-      match custom with
-      | Record record ->
-        Option.bind (Map.find fieldname record) (fun idx ->
-        Option.bind (run_expression s ctx expr) (fun v ->
-        let ignore = Vector.set s idx (Normal v) in
-        Some v))
-      | _ -> None
-    end
-  | _ -> None)
+  do_record value (fun record ->
+    (* Some idx = Map.find fieldname record
+     * Some v = run_expression s ctx expr *)
+    Option.bind (Map.find fieldname record) (fun idx ->
+    Option.bind (run_expression s ctx expr) (fun v ->
+      let ignore = Vector.set s idx (Normal v) in
+      Some v))))
 | Expression_ifthenelse (_, cond, e1, e2) ->
   Option.bind (run_expression s ctx cond) (fun cond_val ->
     if is_sumtype_ctor "true" cond_val then
@@ -205,20 +188,11 @@ and pattern_match s ctx value patt = match patt with
   let idx = Vector.append s (Normal value) in
   Some (ExecutionContext.add id idx ctx'))
 | Pattern_constructor (_, ctor, args) ->
-  begin
-    match value with
-    | Value_custom cstm ->
-      begin
-        match cstm with
-        | Sumtype sum ->
-          if sum.constructor === ctor then
-            pattern_match_array s ctx sum.args args
-          else
-            None
-        | Record _ -> None
-      end
-    | _ -> None
-  end
+  do_sumtype value (fun sum ->
+    if sum.constructor === ctor then
+      pattern_match_array s ctx sum.args args
+    else
+      None)
 | Pattern_or (_, patt1, patt2) ->
   begin
     match pattern_match s ctx value patt1 with

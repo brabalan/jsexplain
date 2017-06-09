@@ -210,11 +210,13 @@ let js_of_constant = function
 
 let rec js_of_expression = function
 | Expression_constant (loc, c) ->
+  let js_loc = js_of_location loc in
   let js_c = js_of_constant c in
-  ctor_call "MLSyntax.Expression_constant" [| js_of_location loc ; js_c |]
+  ctor_call "MLSyntax.Expression_constant" [| js_loc ; js_c |]
 | Expression_ident (loc, id) ->
+  let js_loc = js_of_location loc in
   let js_ident = Js.Unsafe.inject (Js.string id) in
-  ctor_call "MLSyntax.Expression_ident" [| js_of_location loc ; js_ident |]
+  ctor_call "MLSyntax.Expression_ident" [| js_loc ; js_ident |]
 | Expression_let (loc, is_rec, patts, val_exps, expr) ->
   let js_loc = js_of_location loc in
   let js_rec = Js.Unsafe.inject is_rec in
@@ -280,22 +282,28 @@ let rec js_of_expression = function
   ctor_call "MLSyntax.Expression_ifthenelse" [| js_loc ; js_cond ; js_e1 ; js_e2 |]
 
 and js_of_pattern = function
-| Pattern_any loc -> ctor_call "MLSyntax.Pattern_any" [| js_of_location loc |]
+| Pattern_any loc ->
+  let js_loc = js_of_location loc in
+  ctor_call "MLSyntax.Pattern_any" [| js_loc |]
 | Pattern_constant (loc, c) ->
   ctor_call "MLSyntax.Pattern_constant" [| js_of_location loc ; js_of_constant c |]
 | Pattern_var (loc, id) ->
+  let js_loc = js_of_location loc in
   let js_id = Js.Unsafe.inject (Js.string id) in
-  ctor_call "MLSyntax.Pattern_var" [| js_of_location loc ; js_id |]
+  ctor_call "MLSyntax.Pattern_var" [| js_loc ; js_id |]
 | Pattern_tuple (loc, patts) ->
+  let js_loc = js_of_location loc in
   let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
-  ctor_call "MLSyntax.Pattern_tuple" [| js_of_location loc ; js_patts |]
+  ctor_call "MLSyntax.Pattern_tuple" [| js_loc ; js_patts |]
 | Pattern_array (loc, patts) ->
+  let js_loc = js_of_location loc in
   let js_patts = Js.Unsafe.inject (Js.array (Array.map js_of_pattern patts)) in
-  ctor_call "MLSyntax.Pattern_array" [| js_of_location loc ; js_patts |]
+  ctor_call "MLSyntax.Pattern_array" [| js_loc ; js_patts |]
 | Pattern_variant (loc, label, patt_opt) ->
+  let js_loc = js_of_location loc in
   let js_label = Js.Unsafe.inject (Js.string label) in
   let js_patt_opt = js_of_option js_of_pattern patt_opt in
-  ctor_call "MLSyntax.Pattern_variant" [| js_of_location loc ; js_label ; js_patt_opt |]
+  ctor_call "MLSyntax.Pattern_variant" [| js_loc ; js_label ; js_patt_opt |]
 | Pattern_alias (loc, patt, id) ->
   let js_loc = js_of_location loc in
   let js_patt = js_of_pattern patt in

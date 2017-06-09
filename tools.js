@@ -83,8 +83,6 @@ function ctx_push(ctx, bindings) {
     }
 
     if(bindings[i].key == 's' && bindings[i].val.hasOwnProperty('ary')) {
-      console.log("ctx_push state object");
-      console.log(bindings[i].val.ary);
       bindings[i].val = Object.assign({}, bindings[i].val);
       bindings[i].val.ary = bindings[i].val.ary.map(a => Object.assign({}, a));
     }
