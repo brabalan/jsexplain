@@ -91,8 +91,12 @@ let rec translate_expression file e =
   | Texp_record r ->
     let conv  (lbl, rec_def) = match rec_def with
     | Overridden (_, expr) -> { name = lbl.lbl_name ; expr = translate_expression file expr }
-    | Kept _ -> { name = "" ; expr = Expression_ident (loc, "") } in
-    let bindings = Array.map conv r.fields in
+    | Kept _ -> { name = "" ; expr = Expression_constant (loc, Constant_integer 0) } in
+    let bindings =
+      let mapped = Array.map conv r.fields in
+      let lst = Array.to_list mapped in
+      let clean_lst = List.filter (fun b -> b.name <> "") lst in
+      Array.of_list clean_lst in
     let base' = Option.bind r.extended_expression (fun base -> Some (translate_expression file base)) in
     Expression_record (loc, bindings, base')
 
