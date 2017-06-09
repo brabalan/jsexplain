@@ -121,7 +121,7 @@ let rec run_expression s ctx _term_ = match _term_ with
     Option.bind (Map.find fieldname record) (fun idx ->
     Option.bind (run_expression s ctx expr) (fun v ->
       let ignore = Vector.set s idx (Normal v) in
-      Some v))))
+      Some nil))))
 | Expression_ifthenelse (_, cond, e1, e2) ->
   Option.bind (run_expression s ctx cond) (fun cond_val ->
     if is_sumtype_ctor "true" cond_val then
