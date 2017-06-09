@@ -112,6 +112,33 @@ let rec run_expression s ctx _term_ = match _term_ with
   Option.bind (MLArray.fold func (Some base_map) bindings) (fun map ->
   let r = Record map in
   Some (Value_custom r))
+| Expression_field (_, record, fieldname) ->
+  Option.bind (run_expression s ctx record) (fun value ->
+  match value with
+  | Value_custom custom ->
+    begin
+      match custom with
+      | Record record ->
+        Option.bind (Map.find fieldname record) (fun idx ->
+        Option.bind (Vector.find s idx) (fun binding ->
+        value_of s ctx binding))
+      | _ -> None
+    end
+  | _ -> None)
+| Expression_setfield (_, record, fieldname, expr) ->
+  Option.bind (run_expression s ctx record) (fun value ->
+  match value with
+  | Value_custom custom ->
+    begin
+      match custom with
+      | Record record ->
+        Option.bind (Map.find fieldname record) (fun idx ->
+        Option.bind (run_expression s ctx expr) (fun v ->
+        let ignore = Vector.set s idx (Normal v) in
+        Some v))
+      | _ -> None
+    end
+  | _ -> None)
 
 and value_of s ctx b = match b with
 | Normal v -> Some v

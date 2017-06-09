@@ -39,6 +39,8 @@ type expression =
 | Expression_match of location * expression * case array [@f loc, expr, cases]
 | Expression_constructor of location * string * expression array [@f loc, ctor, args]
 | Expression_record of location * binding array * expression option [@f loc, bindings, base]
+| Expression_field of location * expression * string [@f loc, record, fieldname]
+| Expression_setfield of location * expression * string * expression [@f loc, record, fieldname, expr]
 
 and pattern =
 | Pattern_any of location [@f loc]

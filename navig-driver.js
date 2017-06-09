@@ -877,6 +877,9 @@ function show_execution_ctx(state, execution_ctx, target) {
     var binding = Vector.get(state, idx);
     var value = undefined;
 
+    if(binding === undefined)
+      return;
+
     if(binding.tag == "Prealloc") {
       var value_opt = MLInterpreter.run_expression(state, execution_ctx, binding.prealloc);
 
@@ -976,7 +979,7 @@ function interp_val_is_list(v) {
 function interp_val_is_syntax(v) {
   return has_tag_in_set(v, ["Expression_constant", "Expression_ident", "Expression_let", "Expression_tuple",
     "Expression_function", "Expression_match", "Expression_apply", "Expression_variant", "Expression_array",
-    "Expression_constructor",
+    "Expression_constructor", "Expression_record", "Expression_field", "Expression_setfield",
     "Constant_integer", "Constant_float", "Constant_char", "Constant_string",
     "Pattern_any", "Pattern_constant", "Pattern_var", "Pattern_tuple", "Pattern_tuple", "Pattern_array",
     "Pattern_variant", "Pattern_alias", "Pattern_constructor", "Pattern_or",
@@ -1312,7 +1315,7 @@ function assignExtraInfosInTrace() {
              last_loc.end.column);*/
          }
        } else if (interp_val_is_state(binding.val)) {
-         // assuming: 'is an state object' iff 'has a state_object_heap field'
+         // assuming: 'is an state object' iff 'has a ary field'
          last_state = binding.val;
        } else if (interp_val_is_execution_ctx(binding.val)) {
          // assuming: 'is an execution_ctx' iff 'has a execution_ctx_lexical_env field'

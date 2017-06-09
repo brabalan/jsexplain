@@ -99,6 +99,15 @@ let rec translate_expression file e =
       Array.of_list clean_lst in
     let base' = Option.bind r.extended_expression (fun base -> Some (translate_expression file base)) in
     Expression_record (loc, bindings, base')
+  | Texp_field (r, _, lbl) ->
+    let record = translate_expression file r in
+    let fieldname = lbl.lbl_name in
+    Expression_field (loc, record, fieldname)
+  | Texp_setfield (r, _, lbl, exp) ->
+    let record = translate_expression file r in
+    let fieldname = lbl.lbl_name in
+    let expr = translate_expression file exp in
+    Expression_setfield (loc, record, fieldname, expr)
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -247,6 +256,17 @@ let rec js_of_expression = function
   let js_bindings = Js.Unsafe.inject (Js.array (Array.map js_of_binding bindings)) in
   let js_base = js_of_option js_of_expression base in
   ctor_call "MLSyntax.Expression_record" [| js_loc ; js_bindings ; js_base |]
+| Expression_field (loc, record, fieldname) ->
+  let js_loc = js_of_location loc in
+  let js_record = js_of_expression record in
+  let js_fieldname = Js.Unsafe.inject (Js.string fieldname) in
+  ctor_call "MLSyntax.Expression_field" [| js_loc ; js_record ; js_fieldname |]
+| Expression_setfield (loc, record, fieldname, expr) ->
+  let js_loc = js_of_location loc in
+  let js_record = js_of_expression record in
+  let js_fieldname = Js.Unsafe.inject (Js.string fieldname) in
+  let js_expr = js_of_expression expr in
+  ctor_call "MLSyntax.Expression_setfield" [| js_loc ; js_record ; js_fieldname ; js_expr |]
 
 and js_of_pattern = function
 | Pattern_any loc -> ctor_call "MLSyntax.Pattern_any" [| js_of_location loc |]
