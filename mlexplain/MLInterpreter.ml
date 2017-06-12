@@ -90,11 +90,14 @@ let rec run_expression s ctx _term_ = match _term_ with
   Some (Value_custom sum))
 | Expression_record (_, bindings, base_opt) ->
   let func map_opt binding =
+    (* Some map = map_opt
+     * Some value = run_expression s ctx binding.expr *)
     Option.bind map_opt (fun map ->
     Option.bind (run_expression s ctx binding.expr) (fun value ->
     let idx = Vector.append s (Normal value) in
     Some (Map.add binding.name idx map))) in
   let string_eq s1 s2 = string_compare s1 s2 === 0 in
+  (* If the value is a record, the function is applied, otherwise the default value is returned *)
   let map_from_value v = do_record_with_default v (Map.empty_map string_eq) (fun r -> r) in
   let base_map = match base_opt with
   | None -> Map.empty_map string_eq
@@ -102,10 +105,12 @@ let rec run_expression s ctx _term_ = match _term_ with
     match run_expression s ctx base with
     | Some v -> map_from_value v
     | None -> Map.empty_map string_eq in
+  (* Some map = MLArray.fold func (Some base_map) bindings *)
   Option.bind (MLArray.fold func (Some base_map) bindings) (fun map ->
   let r = Record map in
   Some (Value_custom r))
 | Expression_field (_, record, fieldname) ->
+  (* Some value = run_expression s ctx record *)
   Option.bind (run_expression s ctx record) (fun value ->
   do_record value (fun record ->
     (* Some idx = Map.find fieldname record
@@ -114,6 +119,7 @@ let rec run_expression s ctx _term_ = match _term_ with
     Option.bind (Vector.find s idx) (fun binding ->
     value_of s ctx binding))))
 | Expression_setfield (_, record, fieldname, expr) ->
+  (* Some value = run_expression s ctx record *)
   Option.bind (run_expression s ctx record) (fun value ->
   do_record value (fun record ->
     (* Some idx = Map.find fieldname record
@@ -123,6 +129,7 @@ let rec run_expression s ctx _term_ = match _term_ with
       let ignore = Vector.set s idx (Normal v) in
       Some nil))))
 | Expression_ifthenelse (_, cond, e1, e2) ->
+  (* Some cond_val = run_expression s ctx cond *)
   Option.bind (run_expression s ctx cond) (fun cond_val ->
     if is_sumtype_ctor "true" cond_val then
       run_expression s ctx e1
@@ -130,7 +137,24 @@ let rec run_expression s ctx _term_ = match _term_ with
       match e2 with
       | Some e -> run_expression s ctx e
       | None -> Some nil)
+| Expression_sequence (_, e1, e2) ->
+  run_expression s ctx e1 ;
+  run_expression s ctx e2
+| Expression_while (loc, cond_expr, body) ->
+  (* Alias pattern not supported by the compiler *)
+  let while_expr = Expression_while (loc, cond_expr, body) in
+  (* Some cond = run_expression s ctx cond_expr *)
+  Option.bind (run_expression s ctx cond_expr) (fun cond ->
+  do_sumtype cond (fun b ->
+  if b.constructor === "true" then
+  begin
+    run_expression s ctx body ;
+    run_expression s ctx while_expr
+  end
+  else
+    Some nil))
 
+(** Get the actual value held by the binding b *)
 and value_of s ctx b = match b with
 | Normal v -> Some v
 | Prealloc e -> run_expression s ctx e
@@ -184,6 +208,7 @@ and pattern_match s ctx value patt = match patt with
     | _ -> None
   end
 | Pattern_alias (_, patt, id) ->
+  (* Some ctx' = pattern_match s ctx value patt *)
   Option.bind (pattern_match s ctx value patt) (fun ctx' ->
   let idx = Vector.append s (Normal value) in
   Some (ExecutionContext.add id idx ctx'))
@@ -283,6 +308,7 @@ let run_structure s ctx _term_ =
   let func opt _term_ =
     Option.bind opt (fun res ->
     run_structure_item s res.ctx _term_) in
+  (* Fake result data used as first input of the fold function below *)
   let fake_res = Some { value = Value_int 0 ; ctx = ctx } in
   match _term_ with
   | Structure (_, items) -> MLArray.fold func fake_res items

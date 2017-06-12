@@ -113,6 +113,14 @@ let rec translate_expression file e =
     let e1 = translate_expression file t in
     let e2 = Option.map (fun e -> translate_expression file e) e in
     Expression_ifthenelse (loc, cond, e1, e2)
+  | Texp_sequence (e1, e2) ->
+    let expr1 = translate_expression file e1 in
+    let expr2 = translate_expression file e2 in
+    Expression_sequence (loc, expr1, expr2)
+  | Texp_while (c, b) ->
+    let cond = translate_expression file c in
+    let body = translate_expression file b in
+    Expression_sequence (loc, cond, body)
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -280,6 +288,16 @@ let rec js_of_expression = function
   let js_e1 = js_of_expression e1 in
   let js_e2 = js_of_option js_of_expression e2 in
   ctor_call "MLSyntax.Expression_ifthenelse" [| js_loc ; js_cond ; js_e1 ; js_e2 |]
+| Expression_sequence (loc, e1, e2) ->
+  let js_loc = js_of_location loc in
+  let js_e1 = js_of_expression e1 in
+  let js_e2 = js_of_expression e2 in
+  ctor_call "MLSyntax.Expression_sequence" [| js_loc ; js_e1 ; js_e2 |]
+| Expression_while (loc, cond, body) ->
+  let js_loc = js_of_location loc in
+  let js_cond = js_of_expression cond in
+  let js_body = js_of_expression body in
+  ctor_call "MLSyntax.Expression_while" [| js_loc ; js_cond ; js_body |]
 
 and js_of_pattern = function
 | Pattern_any loc ->
