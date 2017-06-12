@@ -11,6 +11,11 @@ open MLSyntax
  * Translation from an OCaml-side AST to a JS-side one
  ***************************************************************************************)
 
+let rec translate_ident = function
+| Lident id -> Identifier.Lident id
+| Ldot (path, id) -> Identifier.Ldot (translate_ident path, id)
+| Lapply _ -> Lident ""
+
 let translate_location file loc =
   let loc_start = loc.loc_start in
   let loc_stop = loc.loc_end in
@@ -35,7 +40,7 @@ let rec translate_expression file e =
     let c = translate_constant pc in
     Expression_constant (loc, c)
   | Texp_ident (_, li, _) ->
-    let id = Longident.last (li.txt) in
+    let id = translate_ident (li.txt) in
     Expression_ident (loc, id)
   | Texp_let (ir, binding_list, exp) ->
     let bindings = Array.of_list binding_list in
@@ -210,6 +215,15 @@ let js_of_option func opt = match opt with
   let js_v = func v in
   ctor_call "Some" [| js_v |]
 
+let rec js_of_identifier = function
+| Identifier.Lident id ->
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  ctor_call "Identifier.Lident" [| js_id |]
+| Identifier.Ldot (path, id) ->
+  let js_path = js_of_identifier path in
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  ctor_call "Identifier.Ldot" [| js_path ; js_id |]
+
 let js_of_constant = function
 | Constant_integer i -> ctor_call "MLSyntax.Constant_integer" [| Js.Unsafe.inject i |]
 | Constant_float f -> ctor_call "MLSyntax.Constant_float" [| Js.Unsafe.inject f |]
@@ -223,7 +237,7 @@ let rec js_of_expression = function
   ctor_call "MLSyntax.Expression_constant" [| js_loc ; js_c |]
 | Expression_ident (loc, id) ->
   let js_loc = js_of_location loc in
-  let js_ident = Js.Unsafe.inject (Js.string id) in
+  let js_ident = js_of_identifier id in
   ctor_call "MLSyntax.Expression_ident" [| js_loc ; js_ident |]
 | Expression_let (loc, is_rec, patts, val_exps, expr) ->
   let js_loc = js_of_location loc in

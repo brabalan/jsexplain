@@ -8,6 +8,8 @@ type value =
 | Value_array of value array [@f value]
 | Value_fun of (value -> value option) [@f value]
 | Value_variant of variant [@f value]
+| Value_struct of record [@f value]
+| Value_functor of (value -> value option) [@f value]
 | Value_custom of custom_type [@f value]
 
 and variant = {
@@ -97,6 +99,7 @@ let rec value_eq v1 v2 = match v1 with
     | Value_custom c2 -> custom_eq c1 c2
     | _ -> false
   end
+| _ -> false
 
 and custom_eq c1 c2 = match c1 with
 | Sumtype s1 ->

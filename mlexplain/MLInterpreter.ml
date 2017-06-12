@@ -1,5 +1,6 @@
 open MLSyntax
 open Value
+open Identifier
 
 let min a b = if a <= b then a else b
 
@@ -16,11 +17,24 @@ let run_constant = function
 | Constant_char c -> Value_char c
 | Constant_string s -> Value_string (normalize_string s)
 
-let rec run_expression s ctx _term_ = match _term_ with
-| Expression_constant (_, c) -> Some (run_constant c)
-| Expression_ident (_, id) ->
+let rec run_ident s ctx _term_ = match _term_ with
+| Lident id ->
   Option.bind (ExecutionContext.find id ctx) (fun idx ->
   Option.bind (Vector.find s idx) (fun b -> value_of s ctx b))
+| Ldot (path, id) ->
+  Option.bind (run_ident s ctx path) (fun value ->
+  match value with
+  | Value_struct m ->
+    Option.bind (Map.find id m) (fun idx ->
+    Option.bind (Vector.find s idx) (fun b -> value_of s ctx b))
+  | _ -> None)
+
+
+and run_expression s ctx _term_ = match _term_ with
+| Expression_constant (_, c) -> Some (run_constant c)
+| Expression_ident (_, id) -> run_ident s ctx id
+  (* Option.bind (ExecutionContext.find id ctx) (fun idx ->
+  Option.bind (Vector.find s idx) (fun b -> value_of s ctx b)) *)
 | Expression_let (_, is_rec, patts, exp_ary, e2) ->
   if is_rec then
     let prealloc p = match p with

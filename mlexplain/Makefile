@@ -35,6 +35,7 @@ ASSEMBLY_JS_FILES := \
 	MLArray.unlog.js \
 	Set.unlog.js \
 	Map.unlog.js \
+	Identifier.unlog.js \
 	MLSyntax.unlog.js \
 	Vector.js \
 	Value.unlog.js \
@@ -81,16 +82,19 @@ displayed_sources.js: $(ALL_DISPLAYED) $(DISPLAYGEN_BIN)
 lineof.js: $(ALL_LINEOF) $(LINEOF_BIN)
 	$(LINEOF) -o $@ $(ALL_LINEOF)
 
+Identifier.cmo: Identifier.ml
+	ocamlfind ocamlc -o $@ -c $<
+
 MLSyntax.cmo: MLSyntax.ml
 	ocamlfind ocamlc -o $@ -c $<
 
 Option.cmo: Option.ml
 	ocamlfind ocamlc -o $@ -c $<
 
-TranslateSyntax.cmo: TranslateSyntax.ml Option.cmo MLSyntax.cmo
+TranslateSyntax.cmo: TranslateSyntax.ml Option.cmo MLSyntax.cmo Identifier.cmo
 	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -o $@ -c $<
 
-frontend.byte: MLSyntax.cmo Option.cmo TranslateSyntax.cmo
+frontend.byte: Identifier.cmo MLSyntax.cmo Option.cmo TranslateSyntax.cmo
 	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg -o $@ $^
 
 frontend.js: frontend.byte
