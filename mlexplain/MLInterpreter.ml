@@ -11,6 +11,10 @@ type structure_item_result = {
   ctx : environment
 }
 
+let rec string_of_identifier = function
+| Lident id -> id
+| Ldot (path, id) -> strappend (strappend (string_of_identifier path) ".") id
+
 let run_constant = function
 | Constant_integer i -> Value_int i
 | Constant_float f -> Value_float f
@@ -100,7 +104,7 @@ and run_expression s ctx _term_ = match _term_ with
   let value_opts = MLArray.map (fun e -> run_expression s ctx e) args in
   (* Some a = MLArray.lift_option value_opts *)
   Option.bind (MLArray.lift_option value_opts) (fun values ->
-  let sum = Sumtype { constructor = ctor ; args = values } in
+  let sum = Sumtype { constructor = string_of_identifier ctor ; args = values } in
   Some (Value_custom sum))
 | Expression_record (_, bindings, base_opt) ->
   let func map_opt binding =
@@ -228,7 +232,7 @@ and pattern_match s ctx value patt = match patt with
   Some (ExecutionContext.add id idx ctx'))
 | Pattern_constructor (_, ctor, args) ->
   do_sumtype value (fun sum ->
-    if sum.constructor === ctor then
+    if sum.constructor === string_of_identifier ctor then
       pattern_match_array s ctx sum.args args
     else
       None)

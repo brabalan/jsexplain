@@ -92,7 +92,7 @@ let rec translate_expression file e =
   | Texp_construct (lid, _, exprs) ->
     let ctor = lid.txt in
     let args = Array.of_list (List.map (translate_expression file) exprs) in
-    Expression_constructor (loc, Longident.last ctor, args)
+    Expression_constructor (loc, translate_ident ctor, args)
   | Texp_record r ->
     let conv  (lbl, rec_def) = match rec_def with
     | Overridden (_, expr) -> { name = lbl.lbl_name ; expr = translate_expression file expr }
@@ -153,7 +153,7 @@ and translate_pattern file p =
   | Tpat_construct (lid, _, patts) ->
     let ctor = lid.txt in
     let args = Array.of_list (List.map (translate_pattern file) patts) in
-    Pattern_constructor (loc, Longident.last ctor, args)
+    Pattern_constructor (loc, translate_ident ctor, args)
   | Tpat_or (p1, p2, _) ->
     let patt1 = translate_pattern file p1 in
     let patt2 = translate_pattern file p2 in
@@ -277,7 +277,7 @@ let rec js_of_expression = function
   ctor_call "MLSyntax.Expression_match" [| js_loc ; js_expr ; js_cases |]
 | Expression_constructor (loc, ctor, args) ->
   let js_loc = js_of_location loc in
-  let js_ctor = Js.Unsafe.inject (Js.string ctor) in
+  let js_ctor = js_of_identifier ctor in
   let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_expression args)) in
   ctor_call "MLSyntax.Expression_constructor" [| js_loc ; js_ctor ; js_args |]
 | Expression_record (loc, bindings, base) ->
@@ -343,7 +343,7 @@ and js_of_pattern = function
   ctor_call "MLSyntax.Pattern_alias" [| js_loc ; js_patt ; js_id |]
 | Pattern_constructor (loc, ctor, args) ->
   let js_loc = js_of_location loc in
-  let js_ctor = Js.Unsafe.inject (Js.string ctor) in
+  let js_ctor = js_of_identifier ctor in
   let js_args = Js.Unsafe.inject (Js.array (Array.map js_of_pattern args)) in
   ctor_call "MLSyntax.Pattern_constructor" [| js_loc ; js_ctor ; js_args |]
 | Pattern_or (loc, patt1, patt2) ->
