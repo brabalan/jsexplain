@@ -70,5 +70,11 @@ and structure_item =
 | Structure_eval of location * expression [@f loc, expr]
 | Structure_value of location * bool * pattern array * expression array [@f loc, is_rec, ids, exps]
 | Structure_type of location [@f loc]
+| Structure_module of location * string * module_expression [@f loc, id, expr]
+| Structure_modtype of location [@f loc]
 
 and structure = Structure of location * structure_item array [@f loc, items]
+
+and module_expression =
+| Module_structure of location * structure [@f loc, structure]
+| Module_functor of location * string * module_expression [@f loc, id, expr]

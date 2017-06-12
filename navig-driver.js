@@ -862,6 +862,12 @@ function show_value(state, v, target, depth) {
           t.append(" }");
       }
       break;
+    case "Value_struct":
+      t.append("&lt;module structure&gt;");
+      break;
+    case "Value_functor":
+      t.append("&lt;functor&gt;");
+      break;
     default:
       throw "unrecognized tag in show_value";
   }

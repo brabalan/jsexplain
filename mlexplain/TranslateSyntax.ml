@@ -172,6 +172,22 @@ and translate_structure_item file s =
     let val_exps = Array.map (fun b -> translate_expression file b.vb_expr) bindings in
     Structure_value (loc, is_rec, patts, val_exps)
   | Tstr_type (_, _) -> Structure_type loc
+  | Tstr_module mb ->
+    let id = mb.mb_id.name in
+    let expr = translate_module_expression file mb.mb_expr in
+    Structure_module (loc, id, expr)
+  | Tstr_modtype _ -> Structure_modtype loc
+
+and translate_module_expression file m =
+  let loc = translate_location file m.mod_loc in
+  match m.mod_desc with
+  | Tmod_structure s ->
+    let str = translate_structure file s in
+    Module_structure (loc, str)
+  | Tmod_functor (i, _, _, e) ->
+    let id = i.name in
+    let expr = translate_module_expression file e in
+    Module_functor (loc, id, expr)
 
 and translate_structure file s =
   let items = Array.of_list (List.map (translate_structure_item file) s.str_items) in
@@ -376,6 +392,25 @@ and js_of_structure_item = function
 | Structure_type loc ->
   let js_loc = js_of_location loc in
   ctor_call "MLSyntax.Structure_type" [| js_loc |]
+| Structure_module (loc, id, expr) ->
+  let js_loc = js_of_location loc in
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  let js_expr = js_of_module_expression expr in
+  ctor_call "MLSyntax.Structure_module" [| js_loc ; js_id ; js_expr |]
+| Structure_modtype loc ->
+  let js_loc = js_of_location loc in
+  ctor_call "MLSyntax.Structure_modtype" [| js_loc |]
+
+and js_of_module_expression = function
+| Module_structure (loc, structure) ->
+  let js_loc = js_of_location loc in
+  let js_structure = js_of_structure structure in
+  ctor_call "MLSyntax.Module_structure" [| js_loc ; js_structure |]
+| Module_functor (loc, id, expr) ->
+  let js_loc = js_of_location loc in
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  let js_expr = js_of_module_expression expr in
+  ctor_call "MLSyntax.Module_functor" [| js_loc ; js_id ; js_expr |]
 
 and js_of_structure = function
 | Structure (loc, items) ->

@@ -23,12 +23,16 @@ let run_constant = function
 
 let rec run_ident s ctx _term_ = match _term_ with
 | Lident id ->
+  (* Some idx = ExecutionContext.find id ctx
+   * Some b = Vector.find s idx *)
   Option.bind (ExecutionContext.find id ctx) (fun idx ->
   Option.bind (Vector.find s idx) (fun b -> value_of s ctx b))
 | Ldot (path, id) ->
   Option.bind (run_ident s ctx path) (fun value ->
   match value with
   | Value_struct m ->
+    (* Some idx = ExecutionContext.find id ctx
+     * Some b = Vector.find s idx *)
     Option.bind (Map.find id m) (fun idx ->
     Option.bind (Vector.find s idx) (fun b -> value_of s ctx b))
   | _ -> None)
@@ -273,7 +277,7 @@ and pattern_match_array s ctx ary patts =
       Option.bind ctx_opt some_case_func in
    for_loop (Some ctx) 0
 
-let run_structure_item s ctx _term_ = match _term_ with
+let rec run_structure_item s ctx _term_ = match _term_ with
 | Structure_eval (_, e) -> Option.bind (run_expression s ctx e) (fun v -> Some { value = v ; ctx = ctx })
 | Structure_value (_, is_rec, patts, exp_ary) ->
   (* The data is recursive, a Prealloc binding is generated *)
@@ -321,12 +325,30 @@ let run_structure_item s ctx _term_ = match _term_ with
     Option.bind (value_of s ctx' last) (fun v ->
     Some { value = v ; ctx = ctx' }))))
 | Structure_type _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
+| Structure_module (_, id, expr) ->
+  Option.bind (run_module_expression s ctx expr) (fun m ->
+  let idx = Vector.append s (Normal m) in
+  let ctx' = ExecutionContext.add id idx ctx in
+  Some { value = m ; ctx = ctx' })
+| Structure_modtype _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
 
-let run_structure s ctx _term_ =
+and run_module_expression s ctx _term_ = match _term_ with
+| Module_structure (_, str) ->
+  Option.bind (run_structure s ctx str) (fun res ->
+  let map = ExecutionContext.execution_ctx_lexical_env res.ctx in
+  Some (Value_struct map))
+| Module_functor (_, id, expr) ->
+  let func varg =
+    let idx = Vector.append s (Normal varg) in
+    let ctx' = ExecutionContext.add id idx ctx in
+    run_module_expression s ctx' expr in
+  Some (Value_functor func)
+
+and run_structure s ctx _term_ =
   let func opt _term_ =
     Option.bind opt (fun res ->
     run_structure_item s res.ctx _term_) in
   (* Fake result data used as first input of the fold function below *)
-  let fake_res = Some { value = Value_int 0 ; ctx = ctx } in
+  let fake_res = Some { value = Value_tuple [| |] ; ctx = ctx } in
   match _term_ with
   | Structure (_, items) -> MLArray.fold func fake_res items
