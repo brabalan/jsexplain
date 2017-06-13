@@ -175,6 +175,33 @@ and run_expression s ctx _term_ = match _term_ with
   end
   else
     Some nil))
+| Expression_for (_, id, fst, lst, dir, body) ->
+  Option.bind (run_expression s ctx fst) (fun first ->
+  Option.bind (run_expression s ctx lst) (fun last ->
+  let idx = Vector.append s (Normal first) in
+  let ctx' = ExecutionContext.add id idx ctx in
+  let step_value = if dir then 1 else -1 in
+  let step v = match v with
+  | Value_int i -> Some (Value_int (i + step_value))
+  | _ -> None in
+  let get_int v = match v with
+  | Value_int i -> Some i
+  | _ -> None in
+  let rec iter nil =
+    Option.bind (Vector.find s idx) (fun b ->
+    Option.bind (value_of s ctx b) (fun v ->
+    Option.bind (get_int v) (fun iv ->
+    Option.bind (get_int last) (fun ilast ->
+    let fv = number_of_int iv in
+    let flast = number_of_int ilast in
+    if (dir && fv < flast) || (not dir && fv > flast) then
+      Option.bind (run_expression s ctx' body) (fun res ->
+      Option.bind (step v) (fun v' ->
+      Vector.set s idx (Normal v') ;
+      iter ()))
+    else
+      Some (Value_custom (Sumtype { constructor = "()" ; args = [| |] })))))) in
+  iter ()))
 
 (** Get the actual value held by the binding b *)
 and value_of s ctx b = match b with

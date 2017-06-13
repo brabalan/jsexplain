@@ -126,6 +126,13 @@ let rec translate_expression file e =
     let cond = translate_expression file c in
     let body = translate_expression file b in
     Expression_sequence (loc, cond, body)
+  | Texp_for (i, _, fst, lst, dir, bdy) ->
+    let id = i.name in
+    let first = translate_expression file fst in
+    let last = translate_expression file lst in
+    let direction = (dir = Upto) in
+    let body = translate_expression file bdy in
+    Expression_for (loc, id, first, last, direction, body)
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -328,6 +335,14 @@ let rec js_of_expression = function
   let js_cond = js_of_expression cond in
   let js_body = js_of_expression body in
   ctor_call "MLSyntax.Expression_while" [| js_loc ; js_cond ; js_body |]
+| Expression_for (loc, id, first, last, dir, body) ->
+  let js_loc = js_of_location loc in
+  let js_id = Js.Unsafe.inject (Js.string id) in
+  let js_first = js_of_expression first in
+  let js_last = js_of_expression last in
+  let js_dir = Js.Unsafe.inject dir in
+  let js_body = js_of_expression body in
+  ctor_call "MLSyntax.Expression_for" [| js_loc ; js_id ; js_first ; js_last ; js_dir ; js_body |]
 
 and js_of_pattern = function
 | Pattern_any loc ->

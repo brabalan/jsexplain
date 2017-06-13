@@ -44,6 +44,7 @@ type expression =
 | Expression_ifthenelse of location * expression * expression * expression option [@f loc, cond, e1, e2]
 | Expression_sequence of location * expression * expression [@f loc, e1, e2]
 | Expression_while of location * expression * expression [@f loc, cond, body]
+| Expression_for of location * string * expression * expression * bool * expression [@f loc, id, first, last, up, body]
 
 and pattern =
 | Pattern_any of location [@f loc]
