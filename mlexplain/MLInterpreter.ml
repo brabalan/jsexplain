@@ -176,8 +176,12 @@ and run_expression s ctx _term_ = match _term_ with
   else
     Some nil))
 | Expression_for (_, id, fst, lst, dir, body) ->
+  (* Some first = run_expression s ctx fst
+   * Some last = run_expression s ctx lst *)
   Option.bind (run_expression s ctx fst) (fun first ->
   Option.bind (run_expression s ctx lst) (fun last ->
+  (* Create a new object in the program's state and add a reference to it in the context
+   * val <id> : int = <first> (and stored in the state at index <idx> *)
   let idx = Vector.append s (Normal first) in
   let ctx' = ExecutionContext.add id idx ctx in
   let step_value = if dir then 1 else -1 in
@@ -188,18 +192,29 @@ and run_expression s ctx _term_ = match _term_ with
   | Value_int i -> Some i
   | _ -> None in
   let rec iter nil =
+    (* Some b = Vector.find s idx
+     * Some v = value_of s ctx b
+     * Some iv = get_int v
+     * Some ilast = get_int last *)
     Option.bind (Vector.find s idx) (fun b ->
     Option.bind (value_of s ctx b) (fun v ->
     Option.bind (get_int v) (fun iv ->
     Option.bind (get_int last) (fun ilast ->
+    (* Mandatory conversion to floats to use operators < and > *)
     let fv = number_of_int iv in
     let flast = number_of_int ilast in
+    (* Check whether fv has reached flast depending on the direction *)
     if (dir && fv < flast) || (not dir && fv > flast) then
+      (* Some res = run_expression s ctx' body
+       * Some v' = step v
+       
+       * The body is executed in the Option monad to propagate errors *)
       Option.bind (run_expression s ctx' body) (fun res ->
       Option.bind (step v) (fun v' ->
       Vector.set s idx (Normal v') ;
       iter ()))
     else
+      (* A for loop returns uni *)
       Some (Value_custom (Sumtype { constructor = "()" ; args = [| |] })))))) in
   iter ()))
 
