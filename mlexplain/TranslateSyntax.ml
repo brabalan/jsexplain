@@ -188,6 +188,9 @@ and translate_structure_item file s =
 and translate_module_expression file m =
   let loc = translate_location file m.mod_loc in
   match m.mod_desc with
+  | Tmod_ident (_, i) ->
+    let id = translate_ident i.txt in
+    Module_ident (loc, id)
   | Tmod_structure s ->
     let str = translate_structure file s in
     Module_structure (loc, str)
@@ -195,6 +198,10 @@ and translate_module_expression file m =
     let id = i.name in
     let expr = translate_module_expression file e in
     Module_functor (loc, id, expr)
+  | Tmod_apply (f, e, _) ->
+    let func = translate_module_expression file f in
+    let expr = translate_module_expression file e in
+    Module_apply (loc, func, expr)
 
 and translate_structure file s =
   let items = Array.of_list (List.map (translate_structure_item file) s.str_items) in
@@ -417,6 +424,10 @@ and js_of_structure_item = function
   ctor_call "MLSyntax.Structure_modtype" [| js_loc |]
 
 and js_of_module_expression = function
+| Module_ident (loc, id) ->
+  let js_loc = js_of_location loc in
+  let js_id = js_of_identifier id in
+  ctor_call "MLSyntax.Module_ident" [| js_loc ; js_id |]
 | Module_structure (loc, structure) ->
   let js_loc = js_of_location loc in
   let js_structure = js_of_structure structure in
@@ -426,6 +437,11 @@ and js_of_module_expression = function
   let js_id = Js.Unsafe.inject (Js.string id) in
   let js_expr = js_of_module_expression expr in
   ctor_call "MLSyntax.Module_functor" [| js_loc ; js_id ; js_expr |]
+| Module_apply (loc, func, expr) ->
+  let js_loc = js_of_location loc in
+  let js_func = js_of_module_expression func in
+  let js_expr = js_of_module_expression expr in
+  ctor_call "MLSyntax.Module_apply" [| js_loc ; js_func ; js_expr |]
 
 and js_of_structure = function
 | Structure (loc, items) ->

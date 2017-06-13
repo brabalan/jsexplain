@@ -77,5 +77,7 @@ and structure_item =
 and structure = Structure of location * structure_item array [@f loc, items]
 
 and module_expression =
+| Module_ident of location * Identifier.t [@f loc, id]
 | Module_structure of location * structure [@f loc, structure]
 | Module_functor of location * string * module_expression [@f loc, id, expr]
+| Module_apply of location * module_expression * module_expression [@f loc, func, expr]

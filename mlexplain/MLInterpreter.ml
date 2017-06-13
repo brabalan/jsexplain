@@ -360,6 +360,7 @@ let rec run_structure_item s ctx _term_ = match _term_ with
 | Structure_modtype _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
 
 and run_module_expression s ctx _term_ = match _term_ with
+| Module_ident (_, id) -> run_ident s ctx id
 | Module_structure (_, str) ->
   Option.bind (run_structure s ctx str) (fun res ->
   let map = ExecutionContext.execution_ctx_lexical_env res.ctx in
@@ -370,6 +371,12 @@ and run_module_expression s ctx _term_ = match _term_ with
     let ctx' = ExecutionContext.add id idx ctx in
     run_module_expression s ctx' expr in
   Some (Value_functor func)
+| Module_apply (_, f, e) ->
+  Option.bind (run_module_expression s ctx f) (fun func ->
+  Option.bind (run_module_expression s ctx e) (fun expr ->
+  match func with
+  | Value_functor fctor -> fctor expr
+  | _ -> None))
 
 and run_structure s ctx _term_ =
   let func opt _term_ =
