@@ -8,6 +8,11 @@ let empty = {
   execution_ctx_strict = true
 }
 
+let from_map map = {
+  execution_ctx_lexical_env = map ;
+  execution_ctx_strict = true
+}
+
 let find n ctx = Map.find n ctx.execution_ctx_lexical_env
 
 let add n v ctx = { ctx with execution_ctx_lexical_env = Map.add n v ctx.execution_ctx_lexical_env }

@@ -73,6 +73,7 @@ and structure_item =
 | Structure_type of location [@f loc]
 | Structure_module of location * string * module_expression [@f loc, id, expr]
 | Structure_modtype of location [@f loc]
+| Structure_include of location * module_expression [@f loc, expr]
 
 and structure = Structure of location * structure_item array [@f loc, items]
 

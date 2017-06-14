@@ -378,6 +378,13 @@ let rec run_structure_item s ctx _term_ = match _term_ with
   let ctx' = ExecutionContext.add id idx ctx in
   Some { value = m ; ctx = ctx' })
 | Structure_modtype _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
+| Structure_include (_, expr) ->
+  Option.bind (run_module_expression s ctx expr) (fun value ->
+  match value with
+  | Value_struct str ->
+    let map = Map.union str (ExecutionContext.execution_ctx_lexical_env ctx) in
+    Some { value = nil ; ctx = ExecutionContext.from_map map }
+  | _ -> None)
 
 and run_module_expression s ctx _term_ = match _term_ with
 | Module_ident (_, id) -> run_ident s ctx id

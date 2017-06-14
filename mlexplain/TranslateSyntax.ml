@@ -184,6 +184,10 @@ and translate_structure_item file s =
     let expr = translate_module_expression file mb.mb_expr in
     Structure_module (loc, id, expr)
   | Tstr_modtype _ -> Structure_modtype loc
+  | Tstr_include incl_infos ->
+    let t_expr = incl_infos.incl_mod in
+    let expr = translate_module_expression file t_expr in
+    Structure_include (loc, expr)
 
 and translate_module_expression file m =
   let loc = translate_location file m.mod_loc in
@@ -425,6 +429,10 @@ and js_of_structure_item = function
 | Structure_modtype loc ->
   let js_loc = js_of_location loc in
   ctor_call "MLSyntax.Structure_modtype" [| js_loc |]
+| Structure_include (loc, expr) ->
+  let js_loc = js_of_location loc in
+  let js_expr = js_of_module_expression expr in
+  ctor_call "MLSyntax.Structure_include" [| js_loc ; js_expr |]
 
 and js_of_module_expression = function
 | Module_ident (loc, id) ->
