@@ -81,3 +81,4 @@ and module_expression =
 | Module_structure of location * structure [@f loc, structure]
 | Module_functor of location * string * module_expression [@f loc, id, expr]
 | Module_apply of location * module_expression * module_expression [@f loc, func, expr]
+| Module_constraint of location * module_expression [@f loc, expr]

@@ -115,8 +115,10 @@ and sumtype_eq s1 s2 =
   let t2 = Value_tuple s2.args in
   s1.constructor === s2.constructor && value_eq t1 t2
 
+(** Create a unit value *)
 let nil = Value_custom (Sumtype { constructor = "()" ; args = [| |] })
 
+(** Check if the given value is a sumtype and is of given constructor *)
 let is_sumtype_ctor ctor v = match v with
 | Value_custom c ->
   begin
@@ -126,6 +128,7 @@ let is_sumtype_ctor ctor v = match v with
   end
 | _ -> false
 
+(** Apply the function to the sumtype if the value is one *)
 let do_sumtype value func = match value with
 | Value_custom custom ->
   begin
@@ -135,6 +138,7 @@ let do_sumtype value func = match value with
   end
 | _ -> None
 
+(** Apply the function on the record if the value is one *)
 let do_record value func = match value with
 | Value_custom custom ->
   begin
@@ -144,6 +148,7 @@ let do_record value func = match value with
   end
 | _ -> None
 
+(** Apply the function to the record if the value is one, return the default value otherwise *)
 let do_record_with_default value dflt func = match value with
 | Value_custom custom ->
   begin

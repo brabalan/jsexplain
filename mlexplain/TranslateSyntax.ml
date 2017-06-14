@@ -202,6 +202,9 @@ and translate_module_expression file m =
     let func = translate_module_expression file f in
     let expr = translate_module_expression file e in
     Module_apply (loc, func, expr)
+  | Tmod_constraint (e, _, _, _) ->
+    let expr = translate_module_expression file e in
+    Module_constraint (loc, expr)
 
 and translate_structure file s =
   let items = Array.of_list (List.map (translate_structure_item file) s.str_items) in
@@ -442,6 +445,10 @@ and js_of_module_expression = function
   let js_func = js_of_module_expression func in
   let js_expr = js_of_module_expression expr in
   ctor_call "MLSyntax.Module_apply" [| js_loc ; js_func ; js_expr |]
+| Module_constraint (loc, expr) ->
+  let js_loc = js_of_location loc in
+  let js_expr = js_of_module_expression expr in
+  ctor_call "MLSyntax.Module_constraint" [| js_loc ; js_expr |]
 
 and js_of_structure = function
 | Structure (loc, items) ->

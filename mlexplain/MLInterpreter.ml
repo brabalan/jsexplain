@@ -397,6 +397,7 @@ and run_module_expression s ctx _term_ = match _term_ with
   match func with
   | Value_functor fctor -> fctor expr
   | _ -> None))
+| Module_constraint (_, expr) -> run_module_expression s ctx expr
 
 and run_structure s ctx _term_ =
   let func opt _term_ =
