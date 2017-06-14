@@ -174,6 +174,7 @@ and run_expression s ctx _term_ = match _term_ with
     run_expression s ctx while_expr
   end
   else
+    (* While loops ultimately return nil *)
     Some nil))
 | Expression_for (_, id, fst, lst, dir, body) ->
   (* Some first = run_expression s ctx fst
@@ -215,7 +216,7 @@ and run_expression s ctx _term_ = match _term_ with
       iter ()))
     else
       (* A for loop returns uni *)
-      Some (Value_custom (Sumtype { constructor = "()" ; args = [| |] })))))) in
+      Some Value.nil)))) in
   iter ()))
 
 (** Get the actual value held by the binding b *)
@@ -362,6 +363,10 @@ let rec run_structure_item s ctx _term_ = match _term_ with
     let idx_opt = match rev_elems with
     | [] -> None
     | h :: t -> Some h in
+
+    (* Some idx = idx_opt
+     * Some last = Vector.find s idx
+     * Some v = value_of s ctx' last *)
     Option.bind idx_opt (fun idx ->
     Option.bind (Vector.find s idx) (fun last ->
     Option.bind (value_of s ctx' last) (fun v ->
