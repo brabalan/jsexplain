@@ -371,13 +371,13 @@ let rec run_structure_item s ctx _term_ = match _term_ with
     Option.bind (Vector.find s idx) (fun last ->
     Option.bind (value_of s ctx' last) (fun v ->
     Some { value = v ; ctx = ctx' }))))
-| Structure_type _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
+| Structure_type _ -> Some { value = nil ; ctx = ctx }
 | Structure_module (_, id, expr) ->
   Option.bind (run_module_expression s ctx expr) (fun m ->
   let idx = Vector.append s (Normal m) in
   let ctx' = ExecutionContext.add id idx ctx in
   Some { value = m ; ctx = ctx' })
-| Structure_modtype _ -> Some { value = Value_tuple [| |] ; ctx = ctx }
+| Structure_modtype _ -> Some { value = nil ; ctx = ctx }
 | Structure_include (_, expr) ->
   Option.bind (run_module_expression s ctx expr) (fun value ->
   match value with
@@ -385,6 +385,7 @@ let rec run_structure_item s ctx _term_ = match _term_ with
     let map = Map.union str (ExecutionContext.execution_ctx_lexical_env ctx) in
     Some { value = nil ; ctx = ExecutionContext.from_map map }
   | _ -> None)
+| Structure_primitive _ -> Some { value = nil ; ctx = ctx }
 
 and run_module_expression s ctx _term_ = match _term_ with
 | Module_ident (_, id) -> run_ident s ctx id
@@ -411,6 +412,6 @@ and run_structure s ctx _term_ =
     Option.bind opt (fun res ->
     run_structure_item s res.ctx _term_) in
   (* Fake result data used as first input of the fold function below *)
-  let fake_res = Some { value = Value_tuple [| |] ; ctx = ctx } in
+  let fake_res = Some { value = nil ; ctx = ctx } in
   match _term_ with
   | Structure (_, items) -> MLArray.fold func fake_res items

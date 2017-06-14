@@ -188,6 +188,7 @@ and translate_structure_item file s =
     let t_expr = incl_infos.incl_mod in
     let expr = translate_module_expression file t_expr in
     Structure_include (loc, expr)
+  | Tstr_primitive _ -> Structure_primitive loc
 
 and translate_module_expression file m =
   let loc = translate_location file m.mod_loc in
@@ -433,6 +434,9 @@ and js_of_structure_item = function
   let js_loc = js_of_location loc in
   let js_expr = js_of_module_expression expr in
   ctor_call "MLSyntax.Structure_include" [| js_loc ; js_expr |]
+| Structure_primitive loc ->
+  let js_loc = js_of_location loc in
+  ctor_call "MLSyntax.Structure_primitive" [| js_loc |]
 
 and js_of_module_expression = function
 | Module_ident (loc, id) ->
