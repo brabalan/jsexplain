@@ -215,6 +215,13 @@ and run_expression s ctx _term_ = match _term_ with
       (* A for loop returns uni *)
       Unsafe.box Value.nil)))) in
   iter ()))
+| Expression_try (_, expr, cases) ->
+  let ret = run_expression s ctx expr in
+  begin
+    match ret with
+    | Unsafe.Exception x -> pattern_match_many s ctx x (MLList.of_array cases)
+    | _ -> ret
+  end
 
 (** Get the actual value held by the binding b *)
 and value_of s ctx b = match b with
@@ -382,6 +389,7 @@ let rec run_structure_item s ctx _term_ = match _term_ with
     Unsafe.box { value = nil ; ctx = ExecutionContext.from_map map }
   | _ -> Unsafe.error "Expected a module value")
 | Structure_primitive _ -> Unsafe.box { value = nil ; ctx = ctx }
+| Structure_exception _ -> Unsafe.box { value = nil ; ctx = ctx }
 
 and run_module_expression s ctx _term_ = match _term_ with
 | Module_ident (_, id) -> run_ident s ctx id

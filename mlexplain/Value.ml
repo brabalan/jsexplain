@@ -159,3 +159,5 @@ let do_record_with_default value dflt func = match value with
     | _ -> dflt
   end
 | _ -> dflt
+
+let raise_function v = Unsafe.except v ;;

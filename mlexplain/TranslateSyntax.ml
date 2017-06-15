@@ -133,6 +133,14 @@ let rec translate_expression file e =
     let direction = (dir = Upto) in
     let body = translate_expression file bdy in
     Expression_for (loc, id, first, last, direction, body)
+  | Texp_try (e, cs) ->
+    let expr = translate_expression file e in
+    let map_f case = {
+      patt = translate_pattern file case.c_lhs ;
+      expr = translate_expression file case.c_rhs
+    } in
+    let cases = Array.of_list (List.map map_f cs) in
+    Expression_try (loc, expr, cases)
 
 and translate_pattern file p =
   let loc = translate_location file p.pat_loc in
@@ -189,6 +197,7 @@ and translate_structure_item file s =
     let expr = translate_module_expression file t_expr in
     Structure_include (loc, expr)
   | Tstr_primitive _ -> Structure_primitive loc
+  | Tstr_exception _ -> Structure_exception loc
 
 and translate_module_expression file m =
   let loc = translate_location file m.mod_loc in
@@ -358,6 +367,11 @@ let rec js_of_expression = function
   let js_dir = Js.Unsafe.inject dir in
   let js_body = js_of_expression body in
   ctor_call "MLSyntax.Expression_for" [| js_loc ; js_id ; js_first ; js_last ; js_dir ; js_body |]
+| Expression_try (loc, expr, cases) ->
+  let js_loc = js_of_location loc in
+  let js_expr = js_of_expression expr in
+  let js_cases = Js.Unsafe.inject (Js.array (Array.map js_of_case cases)) in
+  ctor_call "MLSyntax.Expression_try" [| js_loc ; js_expr ; js_cases |]
 
 and js_of_pattern = function
 | Pattern_any loc ->
@@ -437,6 +451,9 @@ and js_of_structure_item = function
 | Structure_primitive loc ->
   let js_loc = js_of_location loc in
   ctor_call "MLSyntax.Structure_primitive" [| js_loc |]
+| Structure_exception loc ->
+  let js_loc = js_of_location loc in
+  ctor_call "MLSyntax.Structure_exception" [| js_loc |]
 
 and js_of_module_expression = function
 | Module_ident (loc, id) ->
@@ -469,6 +486,18 @@ and js_of_structure = function
   ctor_call "MLSyntax.Structure" [| js_loc ; js_items |]
 
 
+let raise_value =
+  let raise_type =
+    let ret_type = Btype.newgenty (Types.Tvar (Some "a")) in
+    let desc = Types.Tarrow (Asttypes.Nolabel, Predef.type_exn, ret_type, Types.Cok) in
+    Btype.newgenty desc in
+  {
+    Types.val_type = raise_type ;
+    Types.val_kind = Types.Val_reg ;
+    Types.val_loc = Location.none ;
+    Types.val_attributes = []
+  }
+
 let () =
   Js.export "MLExplain"
   (object%js
@@ -478,7 +507,8 @@ let () =
       let s = Js.to_string str in
       let lexbuffer = from_string s in
       let past = Parse.expression lexbuffer in
-      let typed_ast = Typecore.type_expression Env.empty past in
+      let env = Env.add_value (Ident.create "raise") raise_value Env.empty in
+      let typed_ast = Typecore.type_expression env past in
       let ast = translate_expression filename typed_ast in
       js_of_expression ast
 
@@ -500,7 +530,9 @@ let () =
             loc_ghost = false
           }
         | [] -> Location.none (* absurd *) in
-      let (env, _) = Predef.build_initial_env (Env.add_type ~check:true) (Env.add_extension ~check:true) Env.empty in
+      let (predef_env, _) = Predef.build_initial_env
+        (Env.add_type ~check:true) (Env.add_extension ~check:true) Env.empty in
+      let env = Env.add_value (Ident.create "raise") raise_value predef_env in
       let (typed_ast, _, _) = Typemod.type_structure env past (structure_loc past) in
       let struct_ = translate_structure filename typed_ast in
       js_of_structure struct_

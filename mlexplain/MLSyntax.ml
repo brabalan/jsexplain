@@ -45,6 +45,7 @@ type expression =
 | Expression_sequence of location * expression * expression [@f loc, e1, e2]
 | Expression_while of location * expression * expression [@f loc, cond, body]
 | Expression_for of location * string * expression * expression * bool * expression [@f loc, id, first, last, up, body]
+| Expression_try of location * expression * case array [@f loc, expr, cases]
 
 and pattern =
 | Pattern_any of location [@f loc]
@@ -75,6 +76,7 @@ and structure_item =
 | Structure_modtype of location [@f loc]
 | Structure_include of location * module_expression [@f loc, expr]
 | Structure_primitive of location [@f loc]
+| Structure_exception of location [@f loc]
 
 and structure = Structure of location * structure_item array [@f loc, items]
 
