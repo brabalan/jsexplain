@@ -814,15 +814,16 @@ function show_value(state, v, target, depth) {
     case "Value_variant":
       t.append("`" + v.value.label + " ");
       var opt = v.value.value_opt;
-      if(opt.tag == "Some")
-        if(opt.value.tag == "Value_variant" || opt.value.tag == "Value_custom") {
+      if(opt.tag == "Some" && opt.value.tag == "Result") {
+        var value = opt.value.result;
+        if(result.tag == "Value_variant" || result.tag == "Value_custom") {
           t.append("(");
-          show_value(state, v.value.value_opt.value, target, depth);
+          show_value(state, result, target, depth);
           t.append(")");
         }
-        
         else
-          show_value(state, v.value.value_opt.value, target, depth);
+          show_value(state, value, target, depth);
+      }
       break;
     case "Value_custom":
       switch(v.value.tag) {
@@ -889,8 +890,8 @@ function show_execution_ctx(state, execution_ctx, target) {
     if(binding.tag == "Prealloc") {
       var value_opt = MLInterpreter.run_expression(state, execution_ctx, binding.prealloc);
 
-      if(value_opt.tag == "Some")
-        value = value_opt.value;
+      if(value_opt.tag == "Result")
+        value = value_opt.result;
       else
         return;
     }
@@ -905,32 +906,6 @@ function show_execution_ctx(state, execution_ctx, target) {
 
   MLList.map(show_binding, lex_env.bindings);
 }
-
-/*function show_execution_ctx(state, execution_ctx, target) {
-  var t = $("#" + target);
-
-  // strictness
-  t.append("<div><b>strictness</b>: " + execution_ctx.execution_ctx_strict + " </div>");
-
-  // this object
-  var this_target = fresh_id();
-  t.append("<div id='" + this_target + "'><b>this:</b> </div>");
-  //TODO 
-  show_value(state, execution_ctx.execution_ctx_this_binding, this_target, 0);
-
-  // lexical env
-  var lexical_env_target = fresh_id();
-  t.append("<div><b>lexical-env:</b> <div style='margin-left: 1em' id='" + lexical_env_target + "'></div></div>");
-  show_lexical_env(state, execution_ctx.execution_ctx_lexical_env, lexical_env_target);
-  
-  // variable env -- TODO, like above
-  var variable_env_target = fresh_id();
-  t.append("<div><b>variable-env:</b> <div style='margin-left: 1em' id='" + variable_env_target + "'></div></div>");
-  show_lexical_env(state, execution_ctx.execution_ctx_variable_env, variable_env_target);
-}*/
-
-
-
 
 // --------------- Views for interpreter context ----------------
 
@@ -986,10 +961,13 @@ function interp_val_is_syntax(v) {
   return has_tag_in_set(v, ["Expression_constant", "Expression_ident", "Expression_let", "Expression_tuple",
     "Expression_function", "Expression_match", "Expression_apply", "Expression_variant", "Expression_array",
     "Expression_constructor", "Expression_record", "Expression_field", "Expression_setfield",
+    "Expression_for", "Expression_while", "Expression_sequence",
     "Constant_integer", "Constant_float", "Constant_char", "Constant_string",
     "Pattern_any", "Pattern_constant", "Pattern_var", "Pattern_tuple", "Pattern_tuple", "Pattern_array",
     "Pattern_variant", "Pattern_alias", "Pattern_constructor", "Pattern_or",
-    "Structure_eval", "Structure_value", "Structure_type"]);
+    "Structure_eval", "Structure_value", "Structure_type", "Structure_module", "Structure_modtype",
+    "Structure_include", "Structure_primitive",
+    "Module_ident", "Module_structure", "Module_functor", "Module_apply", "Module_constraint"]);
 }
 
 function interp_val_is_state(v) {

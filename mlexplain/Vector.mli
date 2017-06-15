@@ -6,6 +6,6 @@ val append : 'a vec -> 'a -> int
 
 val get : 'a vec -> int -> 'a
 
-val find : 'a vec -> int -> 'a option
+val find : 'a vec -> int -> ('b, 'a) Unsafe.t
 
 val set : 'a vec -> int -> 'a -> unit

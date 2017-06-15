@@ -6,15 +6,16 @@ type value =
 | Value_tuple of value array [@f value]
 | Value_list of value list [@f value]
 | Value_array of value array [@f value]
-| Value_fun of (value -> value option) [@f value]
+| Value_fun of (value -> value Unsafe.value) [@f value]
 | Value_variant of variant [@f value]
 | Value_struct of record [@f value]
-| Value_functor of (value -> value option) [@f value]
+| Value_functor of (value -> value Unsafe.value) [@f value]
 | Value_custom of custom_type [@f value]
+| Value_exception of sumtype [@f value]
 
 and variant = {
   label : string ;
-  value_opt : value option
+  value_opt : (value Unsafe.value) option
 }
 
 and custom_type =
@@ -89,7 +90,8 @@ let rec value_eq v1 v2 = match v1 with
   begin
     match v2 with
     | Value_variant vr2 ->
-      let val_eq = Option.eq value_eq vr1.value_opt vr2.value_opt in
+      let cmp v1 v2 = Unsafe.eq value_eq value_eq v1 v2 in
+      let val_eq = Option.eq cmp vr1.value_opt vr2.value_opt in
       vr1.label === vr2.label && val_eq
     | _ -> false
   end
@@ -134,9 +136,9 @@ let do_sumtype value func = match value with
   begin
     match custom with
     | Sumtype s -> func s
-    | _ -> None
+    | _ -> Unsafe.error "Not a sumtype"
   end
-| _ -> None
+| _ -> Unsafe.error "Not a sumtype"
 
 (** Apply the function on the record if the value is one *)
 let do_record value func = match value with
@@ -144,9 +146,9 @@ let do_record value func = match value with
   begin
     match custom with
     | Record r -> func r
-    | _ -> None
+    | _ -> Unsafe.error "Not a record"
   end
-| _ -> None
+| _ -> Unsafe.error "Not a record"
 
 (** Apply the function to the record if the value is one, return the default value otherwise *)
 let do_record_with_default value dflt func = match value with

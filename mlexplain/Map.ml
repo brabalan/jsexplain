@@ -10,11 +10,12 @@ type 'a equality_test = 'a -> 'a -> bool
 (** The actual map datatype *)
 type ('a, 'b) map = {
   eq : 'a equality_test ;
+  show : 'a -> string ;
   bindings : ('a, 'b) binding list
 }
 
 (** Create a map with the given equality-test function *)
-let empty_map eq = { eq = eq ; bindings = [] }
+let empty_map eq show = { eq = eq ; show = show ; bindings = [] }
 
 (** Accessors *)
 let key_from_binding b = b.key
@@ -22,10 +23,12 @@ let value_from_binding b = b.value
 
 (** Retrieve the value associated with the given key in the map *)
 let rec find key m = match m.bindings with
-| [] -> None
+| [] ->
+  let err_msg = strappend "Could not find key '" (strappend (m.show key) "' in map") in
+  Unsafe.error err_msg
 | h :: t ->
   if m.eq h.key key then
-    Some h.value
+    Unsafe.box h.value
   else
     find key { m with bindings = t }
 
@@ -62,7 +65,7 @@ let rec union m1 m2 = match m1.bindings with
 
 (** Apply the function on every element in the map *)
 let rec map f m = match m.bindings with
-| [] -> empty_map m.eq
+| [] -> empty_map m.eq m.show
 | h :: t ->
   let h' = { key = h.key ; value = f h.value } in
   let m' = map f { m with bindings = t } in

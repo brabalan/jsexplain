@@ -14,13 +14,13 @@ var Vector = (function() {
 
   var find = function(vec, idx) {
     if(vec.length <= idx)
-      return { tag: "None" };
+      return { tag: "Error", error: "Index " + idx + "out of bounds" };
 
     var v = get(vec, idx);
     if(v == undefined)
-      return { tag: "None" };
+      return { tag: "Error", error: "Value is undefined" };
     else
-      return { tag: "Some", value: v };
+      return { tag: "Result", result: v };
   }
 
   var set = function(vec, idx, v) {

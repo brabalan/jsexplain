@@ -38,9 +38,15 @@ let lift_option ary =
     (* Some ary = ary_opt
      * Some v = opt *)
     Option.bind ary_opt (fun ary ->
-      Option.bind opt (fun v ->
-        Some (append ary (make 1 v))))
+    Option.bind opt (fun v ->
+    Some (append ary (make 1 v)))) in
   (* If the array contains no None value, the resulting value is Some A,
    * with A being an array containing input-array inner values *)
-  in fold f (Some [| |]) ary
+  fold f (Some [| |]) ary
 
+let lift_unsafe ary =
+  let f ary_nsf nsf =
+    Unsafe.bind ary_nsf (fun ary ->
+    Unsafe.bind nsf (fun v ->
+    Unsafe.box (append ary (make 1 v)))) in
+  fold f (Unsafe.box [| |]) ary

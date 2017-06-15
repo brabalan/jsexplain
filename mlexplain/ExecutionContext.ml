@@ -4,7 +4,7 @@ type execution_ctx = {
 }
 
 let empty = {
-  execution_ctx_lexical_env = Map.empty_map (fun s1 s2 -> s1 === s2) ;
+  execution_ctx_lexical_env = Map.empty_map (fun s1 s2 -> s1 === s2) (fun s -> s) ;
   execution_ctx_strict = true
 }
 
