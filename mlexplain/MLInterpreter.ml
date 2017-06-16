@@ -21,10 +21,18 @@ let create_builtin name value = { name = name ; value = value }
 let build_initial_env s ctx =
   let builtins = [
     create_builtin "raise" raise_function ;
-    create_builtin "+" prim_plus ;
-    create_builtin "-" prim_sub ;
-    create_builtin "*" prim_mul ;
-    create_builtin "/" prim_div
+    create_builtin "+" prim_int_plus ;
+    create_builtin "-" prim_int_sub ;
+    create_builtin "*" prim_int_mul ;
+    create_builtin "/" prim_int_div ;
+
+    create_builtin "+." prim_float_plus ;
+    create_builtin "-." prim_float_sub ;
+    create_builtin "*." prim_float_mul ;
+    create_builtin "/." prim_float_div ;
+
+    create_builtin "&&" prim_bool_and ;
+    create_builtin "||" prim_bool_or
   ] in
   let func ctx builtin =
     let idx = Vector.append s (Normal builtin.value) in
