@@ -492,19 +492,6 @@ and js_of_structure = function
   let js_items = Js.Unsafe.inject (Js.array (Array.map js_of_structure_item items)) in
   ctor_call "MLSyntax.Structure" [| js_loc ; js_items |]
 
-
-let raise_value =
-  let raise_type =
-    let ret_type = Btype.newgenty (Types.Tvar (Some "a")) in
-    let desc = Types.Tarrow (Asttypes.Nolabel, Predef.type_exn, ret_type, Types.Cok) in
-    Btype.newgenty desc in
-  {
-    Types.val_type = raise_type ;
-    Types.val_kind = Types.Val_reg ;
-    Types.val_loc = Location.none ;
-    Types.val_attributes = []
-  }
-
 let () =
   Js.export "MLExplain"
   (object%js
@@ -514,8 +501,13 @@ let () =
       let s = Js.to_string str in
       let lexbuffer = from_string s in
       let past = Parse.expression lexbuffer in
-      let env = Env.add_value (Ident.create "raise") raise_value Env.empty in
-      let typed_ast = Typecore.type_expression env past in
+      let (env, _) = Predef.build_initial_env
+        (Env.add_type ~check:true) (Env.add_extension ~check:true) Env.empty in
+      let id = Ident.create "Pervasives" in
+      let env' = env
+        |> Primitives.add_pervasives
+        |> Env.open_signature Asttypes.Fresh (Path.Pident id) (Primitives.pervasives_sign) in
+      let typed_ast = Typecore.type_expression env' past in
       let ast = translate_expression filename typed_ast in
       js_of_expression ast
 
@@ -537,13 +529,12 @@ let () =
             loc_ghost = false
           }
         | [] -> Location.none (* absurd *) in
-      let (predef_env, _) = Predef.build_initial_env
+      let (env, _) = Predef.build_initial_env
         (Env.add_type ~check:true) (Env.add_extension ~check:true) Env.empty in
-      let env = Env.add_value (Ident.create "raise") raise_value predef_env in
+      let id = Ident.create "Pervasives" in
       let env' = env
-        |> Primitives.add_int_bin_ops
-        |> Primitives.add_float_bin_ops
-        |> Primitives.add_bool_bin_ops in
+        |> Primitives.add_pervasives
+        |> Env.open_signature Asttypes.Fresh (Path.Pident id) (Primitives.pervasives_sign) in
       let (typed_ast, _, _) = Typemod.type_structure env' past (structure_loc past) in
       let struct_ = translate_structure filename typed_ast in
       js_of_structure struct_

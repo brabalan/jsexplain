@@ -1331,7 +1331,11 @@ function run() {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
     var s = Vector.empty();
-    var env = MLInterpreter.build_initial_env(s, ExecutionContext.empty);
+    var pervasives = MLInterpreter.build_initial_env(s, ExecutionContext.empty);
+    var idx = Vector.append(s, { tag: "Normal", normal_alloc:
+      { tag: "Value_struct", value: ExecutionContext.execution_ctx_lexical_env(pervasives)}});
+    var init = ExecutionContext.add("Pervasives", idx, ExecutionContext.empty);
+    var env = ExecutionContext.open_module(ExecutionContext.execution_ctx_lexical_env(pervasives), init);
     MLInterpreter.run_structure(s, env, program);
  } catch (e) {
    success = false;
