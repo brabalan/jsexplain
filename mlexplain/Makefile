@@ -94,10 +94,13 @@ MLSyntax.cmo: MLSyntax.ml
 Option.cmo: Option.ml
 	ocamlfind ocamlc -o $@ -c $<
 
-TranslateSyntax.cmo: TranslateSyntax.ml Option.cmo MLSyntax.cmo Identifier.cmo
+Primitives.cmo: Primitives.ml
+	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -o $@ -c $<
+
+TranslateSyntax.cmo: TranslateSyntax.ml Primitives.cmo Option.cmo MLSyntax.cmo Identifier.cmo
 	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -o $@ -c $<
 
-frontend.byte: Identifier.cmo MLSyntax.cmo Option.cmo TranslateSyntax.cmo
+frontend.byte: Identifier.cmo MLSyntax.cmo Option.cmo Primitives.cmo TranslateSyntax.cmo
 	ocamlfind ocamlc -I +compiler-libs -package compiler-libs.common -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg -o $@ $^
 
 frontend.js: frontend.byte

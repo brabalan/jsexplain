@@ -1320,8 +1320,7 @@ function runDebug() {
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
   var s = Vector.empty();
-  var idx = Vector.append(s, {tag: "Normal", normal_alloc: {tag: "Value_fun", value: Value.raise_function}});
-  var env = ExecutionContext.add("raise", idx, ExecutionContext.empty);
+  var env = MLInterpreter.build_initial_env(s, ExecutionContext.empty);
   MLInterpreter.run_structure(s, env, program);
 }
 
@@ -1332,8 +1331,7 @@ function run() {
     // JsInterpreter.run_javascript(program);
     // CalcInterpreter.eval_expr(program);
     var s = Vector.empty();
-    var idx = Vector.append(s, {tag: "Normal", normal_alloc: {tag: "Value_fun", value: Value.raise_function}});
-    var env = ExecutionContext.add("raise", idx, ExecutionContext.empty);
+    var env = MLInterpreter.build_initial_env(s, ExecutionContext.empty);
     MLInterpreter.run_structure(s, env, program);
  } catch (e) {
    success = false;

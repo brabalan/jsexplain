@@ -11,6 +11,26 @@ type structure_item_result = {
   ctx : environment
 }
 
+type builtin_binding = {
+  name: string ;
+  value: value
+}
+
+let create_builtin name value = { name = name ; value = value }
+
+let build_initial_env s ctx =
+  let builtins = [
+    create_builtin "raise" raise_function ;
+    create_builtin "+" prim_plus ;
+    create_builtin "-" prim_sub ;
+    create_builtin "*" prim_mul ;
+    create_builtin "/" prim_div
+  ] in
+  let func ctx builtin =
+    let idx = Vector.append s (Normal builtin.value) in
+    ExecutionContext.add builtin.name idx ctx in
+  MLList.foldl func ctx builtins
+
 let rec string_of_identifier = function
 | Lident id -> id
 | Ldot (path, id) -> strappend (strappend (string_of_identifier path) ".") id
@@ -21,7 +41,7 @@ let run_constant = function
 | Constant_char c -> Value_char c
 | Constant_string s -> Value_string (normalize_string s)
 
-let rec run_ident s ctx _term_ = match _term_ with
+let rec run_ident s ctx str = match str with
 | Lident id ->
   (* Result idx = ExecutionContext.find id ctx
    * Result b = Vector.find s idx *)
@@ -296,9 +316,10 @@ and pattern_match s ctx value patt = match patt with
 and pattern_match_many s ctx value cases = match cases with
 | [] -> Unsafe.error "Matching failure"
 | x :: xs ->
-  Unsafe.do_with_default (pattern_match s ctx value x.patt)
-  (pattern_match_many s ctx value xs) (* default value *)
-  (fun ctx' -> run_expression s ctx' x.expr) (* function to apply *)
+  match pattern_match s ctx value x.patt with
+  | Unsafe.Error e -> pattern_match_many s ctx value xs
+  | Unsafe.Result ctx' -> run_expression s ctx' x.expr
+  | Unsafe.Exception ex -> Unsafe.Exception ex
 
 and pattern_match_array s ctx ary patts =
   let len = MLArray.length patts in

@@ -160,4 +160,24 @@ let do_record_with_default value dflt func = match value with
   end
 | _ -> dflt
 
-let raise_function v = Unsafe.except v ;;
+(************************************************************
+ * Language primitives
+ ************************************************************)
+
+let int_bin_op op =
+  let func = function
+  | Value_int a ->
+    let curry = function
+    | Value_int b -> Unsafe.box (Value_int (op a b))
+    | _ -> Unsafe.error "Expected an int" in
+    Unsafe.box (Value_fun curry)
+  | _ -> Unsafe.error "Expected an int" in
+  Value_fun func
+
+let raise_function = Value_fun (fun v -> Unsafe.except v)
+
+let prim_plus = int_bin_op ( fun a b -> a + b )
+let prim_sub = int_bin_op ( fun a b -> a - b )
+let prim_mul = int_bin_op ( fun a b -> a * b )
+let prim_div = int_bin_op ( fun a b -> a / b )
+(* let prim_mod x = int_bin_op ( mod ) x *)
