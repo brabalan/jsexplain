@@ -419,6 +419,11 @@ let rec run_structure_item s ctx _term_ = match _term_ with
   | _ -> Unsafe.error "Expected a module value")
 | Structure_primitive _ -> Unsafe.box { value = nil ; ctx = ctx }
 | Structure_exception _ -> Unsafe.box { value = nil ; ctx = ctx }
+| Structure_open (_, id) ->
+  Unsafe.bind (run_ident s ctx id) (fun v ->
+  match v with
+  | Value_struct md -> Unsafe.box { value = nil ; ctx = ExecutionContext.open_module md ctx }
+  | _ -> Unsafe.error "Expected a module")
 
 and run_module_expression s ctx _term_ = match _term_ with
 | Module_ident (_, id) -> run_ident s ctx id

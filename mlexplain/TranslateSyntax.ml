@@ -198,6 +198,9 @@ and translate_structure_item file s =
     Structure_include (loc, expr)
   | Tstr_primitive _ -> Structure_primitive loc
   | Tstr_exception _ -> Structure_exception loc
+  | Tstr_open op ->
+    let id = op.open_txt.txt in
+    Structure_open (loc, translate_ident id)
 
 and translate_module_expression file m =
   let loc = translate_location file m.mod_loc in
@@ -454,6 +457,10 @@ and js_of_structure_item = function
 | Structure_exception loc ->
   let js_loc = js_of_location loc in
   ctor_call "MLSyntax.Structure_exception" [| js_loc |]
+| Structure_open (loc, id) ->
+  let js_loc = js_of_location loc in
+  let js_id = js_of_identifier id in
+  ctor_call "MLSyntax.Structure_open" [| js_loc ; js_id |]
 
 and js_of_module_expression = function
 | Module_ident (loc, id) ->

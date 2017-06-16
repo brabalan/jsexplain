@@ -77,6 +77,7 @@ and structure_item =
 | Structure_include of location * module_expression [@f loc, expr]
 | Structure_primitive of location [@f loc]
 | Structure_exception of location [@f loc]
+| Structure_open of location * Identifier.t [@f loc, id]
 
 and structure = Structure of location * structure_item array [@f loc, items]
 
