@@ -905,6 +905,28 @@ function show_execution_ctx(state, execution_ctx, target) {
 }
 
   MLList.map(show_binding, lex_env.bindings);
+
+  var modules = execution_ctx.opened_modules;
+
+  function show_module_name(id) {
+    if(id.tag == "Lident")
+      return id.id;
+    else
+      show_module_name(id.path) + id.id;
+  }
+
+  if(modules.tag != "[]") {
+    t.append("<br/><strong>Opened modules :</strong>");
+    var buf = "<ul>";
+    
+    while(modules.tag != "[]") {
+      buf += "<li>" + show_module_name(modules.head.id) + "</li>";
+      modules = modules.tail;
+    }
+
+    buf += "</ul>";
+    t.append(buf);
+  }
 }
 
 // --------------- Views for interpreter context ----------------
@@ -966,7 +988,7 @@ function interp_val_is_syntax(v) {
     "Pattern_any", "Pattern_constant", "Pattern_var", "Pattern_tuple", "Pattern_tuple", "Pattern_array",
     "Pattern_variant", "Pattern_alias", "Pattern_constructor", "Pattern_or",
     "Structure_eval", "Structure_value", "Structure_type", "Structure_module", "Structure_modtype",
-    "Structure_include", "Structure_primitive",
+    "Structure_include", "Structure_primitive", "Structure_open",
     "Module_ident", "Module_structure", "Module_functor", "Module_apply", "Module_constraint"]);
 }
 
@@ -1320,7 +1342,12 @@ function runDebug() {
   // JsInterpreter.run_javascript(program);
   // CalcInterpreter.eval_expr(program);
   var s = Vector.empty();
-  var env = MLInterpreter.build_initial_env(s, ExecutionContext.empty);
+  var pervasives = MLInterpreter.build_initial_env(s, ExecutionContext.empty);
+  var idx = Vector.append(s, { tag: "Normal", normal_alloc:
+    { tag: "Value_struct", value: ExecutionContext.execution_ctx_lexical_env(pervasives)}});
+  var init = ExecutionContext.add("Pervasives", idx, ExecutionContext.empty);
+  var id = {tag: "Lident", id: "Pervasives"};
+  var env = ExecutionContext.open_module(id, ExecutionContext.execution_ctx_lexical_env(pervasives), init);
   MLInterpreter.run_structure(s, env, program);
 }
 
@@ -1335,7 +1362,8 @@ function run() {
     var idx = Vector.append(s, { tag: "Normal", normal_alloc:
       { tag: "Value_struct", value: ExecutionContext.execution_ctx_lexical_env(pervasives)}});
     var init = ExecutionContext.add("Pervasives", idx, ExecutionContext.empty);
-    var env = ExecutionContext.open_module(ExecutionContext.execution_ctx_lexical_env(pervasives), init);
+    var id = {tag: "Lident", id: "Pervasives"};
+    var env = ExecutionContext.open_module(id, ExecutionContext.execution_ctx_lexical_env(pervasives), init);
     MLInterpreter.run_structure(s, env, program);
  } catch (e) {
    success = false;
