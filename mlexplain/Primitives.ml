@@ -40,7 +40,7 @@ let add_int_bin_ops = add_bin_ops ["+" ; "-" ; "*" ; "/"] int_bin_op
 let add_float_bin_ops = add_bin_ops ["+." ; "-." ; "*." ; "/."] float_bin_op
 let add_bool_bin_ops = add_bin_ops ["&&" ; "||"] bool_bin_op
 
-let add_cmp_bin_ops = add_bin_ops ["=" ; "<" ; ">" ; "<=" ; "=<" ; "<>"] cmp_bin_op
+let add_cmp_bin_ops = add_bin_ops ["=" ; "<" ; ">" ; "<=" ; ">=" ; "<>"] cmp_bin_op
 
 let raise_value =
   let raise_type =

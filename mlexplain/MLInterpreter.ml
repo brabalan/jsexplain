@@ -34,7 +34,12 @@ let build_initial_env s ctx =
     create_builtin "&&" prim_bool_and ;
     create_builtin "||" prim_bool_or ;
 
-    create_builtin "=" prim_eq
+    create_builtin "=" prim_eq ;
+    create_builtin "<>" prim_neq ;
+    create_builtin "<" prim_lt ;
+    create_builtin ">" prim_gt ;
+    create_builtin "<=" prim_le ;
+    create_builtin ">=" prim_ge
   ] in
   let func ctx builtin =
     let idx = Vector.append s (Normal builtin.value) in

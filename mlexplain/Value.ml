@@ -35,6 +35,31 @@ type binding =
 | Normal of value [@f normal_alloc]
 | Prealloc of MLSyntax.expression [@f prealloc]
 
+(** Apply the function to the sumtype if the value is one *)
+let do_sumtype value func = match value with
+| Value_custom custom ->
+  begin
+    match custom with
+    | Sumtype s -> func s
+    | _ -> Unsafe.error "Not a sumtype"
+  end
+| _ -> Unsafe.error "Not a sumtype"
+
+(** Convert a value to a boolean *)
+let bool_of_value x =
+  do_sumtype x (fun s ->
+  match s.constructor with
+  | "true" -> Unsafe.box true
+  | "false" -> Unsafe.box false
+  | _ -> Unsafe.error "Not a boolean")
+
+(** Convert a boolean to a value *)
+let value_of_bool b =
+  let res ctor =  Value_custom (Sumtype { constructor = ctor ; args = [| |] }) in
+  match b with
+  | true -> res "true"
+  | false -> res "false"
+
 (** Compare two values *)
 let rec value_eq v1 v2 = match v1 with
 | Value_int i1 ->
@@ -117,6 +142,41 @@ and sumtype_eq s1 s2 =
   let t2 = Value_tuple s2.args in
   s1.constructor === s2.constructor && value_eq t1 t2
 
+let value_inf v1 v2 = match v1 with
+| Value_int i1 ->
+  begin
+    match v2 with
+    | Value_int i2 ->
+      let num1 = number_of_int i1 in
+      let num2 = number_of_int i2 in
+      Unsafe.box (value_of_bool (num1 < num2))
+    | _ -> Unsafe.error "Expected an integer"
+  end
+| Value_float f1 ->
+  begin
+    match v2 with
+    | Value_float f2 -> Unsafe.box (value_of_bool (f1 < f2))
+    | _ -> Unsafe.error "Expected a float"
+  end
+| Value_char c1 ->
+  begin
+    match v2 with
+    | Value_char c2 ->
+      let num1 = number_of_int (int_of_char c1) in
+      let num2 = number_of_int (int_of_char c2) in
+      Unsafe.box (value_of_bool (num1 < num2))
+    | _ -> Unsafe.error "Expected a character"
+  end
+| Value_string s1 ->
+  begin
+    match v2 with
+    | Value_string s2 ->
+      let b = string_compare s1 s2 === -1 in
+      Unsafe.box (value_of_bool b)
+    | _ -> Unsafe.error "Expected a string"
+  end
+| _ -> Unsafe.except (Value_custom (Sumtype { constructor = "Invalid_argument" ; args = [| |] }))
+
 (** Create a unit value *)
 let nil = Value_custom (Sumtype { constructor = "()" ; args = [| |] })
 
@@ -129,16 +189,6 @@ let is_sumtype_ctor ctor v = match v with
     | _ -> false
   end
 | _ -> false
-
-(** Apply the function to the sumtype if the value is one *)
-let do_sumtype value func = match value with
-| Value_custom custom ->
-  begin
-    match custom with
-    | Sumtype s -> func s
-    | _ -> Unsafe.error "Not a sumtype"
-  end
-| _ -> Unsafe.error "Not a sumtype"
 
 (** Apply the function on the record if the value is one *)
 let do_record value func = match value with
@@ -160,19 +210,9 @@ let do_record_with_default value dflt func = match value with
   end
 | _ -> dflt
 
-let bool_of_value x =
-  do_sumtype x (fun s ->
-  match s.constructor with
-  | "true" -> Unsafe.box true
-  | "false" -> Unsafe.box false
-  | _ -> Unsafe.error "Not a boolean")
-
-let value_of_bool b =
-  let res ctor =  Value_custom (Sumtype { constructor = ctor ; args = [| |] }) in
-  match b with
-  | true -> res "true"
-  | false -> res "false"
-
+let get_function = function
+| Value_fun f -> Unsafe.box f
+| _ -> Unsafe.error "Not a function"
 
 (************************************************************
  * Language primitives
@@ -228,3 +268,22 @@ let prim_bool_or = bool_bin_op ( fun a b -> a || b )
 (* let prim_mod x = int_bin_op ( mod ) x *)
 
 let prim_eq = cmp_bin_op value_eq
+let prim_neq =
+  let func a b = not (value_eq a b) in
+  cmp_bin_op func
+let prim_lt = Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> value_inf a b)))
+let prim_le =
+  let func a b =
+    Unsafe.bind (value_inf a b) (fun iv ->
+    Unsafe.bind (bool_of_value iv) (fun ib ->
+    let eqb = value_eq a b in
+    Unsafe.box (value_of_bool (ib || eqb)))) in
+  Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> func a b)))
+let prim_gt = Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> value_inf b a)))
+let prim_ge =
+  let func a b =
+    Unsafe.bind (value_inf a b) (fun iv ->
+    Unsafe.bind (bool_of_value iv) (fun ib ->
+    let eqb = value_eq a b in
+    Unsafe.box (value_of_bool (ib || eqb)))) in
+  Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> func b a)))
