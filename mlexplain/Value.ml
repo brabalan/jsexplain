@@ -287,3 +287,27 @@ let prim_ge =
     let eqb = value_eq a b in
     Unsafe.box (value_of_bool (ib || eqb)))) in
   Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> func b a)))
+
+let prim_float_float op =
+  let func v = match v with
+  | Value_float f -> Unsafe.box (Value_float (op f))
+  | _ -> Unsafe.error "Expected a float" in
+  Value_fun func
+
+let prim_sqrt = prim_float_float sqrt
+let prim_exp = prim_float_float exp
+let prim_log = prim_float_float log
+let prim_log10 = prim_float_float log10
+let prim_expm1 = prim_float_float expm1
+let prim_log1p = prim_float_float log1p
+let prim_cos = prim_float_float cos
+let prim_sin = prim_float_float sin
+let prim_tan = prim_float_float tan
+let prim_acos = prim_float_float acos
+let prim_asin = prim_float_float asin
+let prim_atan = prim_float_float atan
+let prim_cosh = prim_float_float cosh
+let prim_sinh = prim_float_float sinh
+let prim_tanh = prim_float_float tanh
+let prim_ceil = prim_float_float ceil
+let prim_floor = prim_float_float floor

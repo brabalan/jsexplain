@@ -55,9 +55,23 @@ val ( *. ) : float -> float -> float
 val ( /. ) : float -> float -> float
 
 val ( ** ) : float -> float -> float
-val atan : float -> float
+val sqrt : float -> float
 val exp : float -> float
 val log : float -> float
+val log10 : float -> float
+val expm1 : float -> float
+val log1p : float -> float
+val cos : float -> float
+val sin : float -> float
+val tan : float -> float
+val acos : float -> float
+val asin : float -> float
+val atan : float -> float
+val cosh : float -> float
+val sinh : float -> float
+val tanh : float -> float
+val ceil : float -> float
+val floor : float -> float
 val mod_float : float -> float -> float (* Alan: % infix *)
 val float_of_int : int -> float
 val infinity : float

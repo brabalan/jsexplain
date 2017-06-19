@@ -63,6 +63,24 @@ var min = function(a, b) {
     return b;
 }
 
+var sqrt = Math.sqrt;
+var exp = Math.exp;
+var log = Math.log;
+var log10 = Math.log10;
+var expm1 = Math.expm1;
+var log1p = Math.log1p;
+var cos = Math.cos;
+var sin = Math.sin;
+var tan = Math.tan;
+var acos = Math.acos;
+var asin = Math.asin;
+var atan = Math.atan;
+var cosh = Math.cosh;
+var sinh = Math.sinh;
+var tanh = Math.tanh;
+var ceil = Math.ceil;
+var floor = Math.floor;
+
 //----------------------------------------------------------------------------
 // Floating-point Arithmetic
 

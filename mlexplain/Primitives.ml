@@ -31,16 +31,20 @@ let cmp_bin_op = {
   val_attributes = []
 }
 
+let float_float_function_type = {
+  val_type = newgenty (Tarrow (Nolabel, type_float, type_float, Cok)) ;
+  val_kind = Val_reg ;
+  val_loc = Location.none ;
+  val_attributes = []
+}
+
+let float_float_function_list = ["sqrt" ; "exp" ; "log" ; "log10" ; "expm1" ; "log1p" ;
+  "cos" ; "sin" ; "tan" ; "acos" ; "asin" ; "atan" ; "cosh" ; "sinh" ; "tanh" ; "ceil" ; "floor"]
+
 let add_bin_ops ops t env =
   let add_value env id = Env.add_value id t env in
   let ids = List.map Ident.create ops in
   List.fold_left add_value env ids
-
-let add_int_bin_ops = add_bin_ops ["+" ; "-" ; "*" ; "/"] int_bin_op
-let add_float_bin_ops = add_bin_ops ["+." ; "-." ; "*." ; "/."] float_bin_op
-let add_bool_bin_ops = add_bin_ops ["&&" ; "||"] bool_bin_op
-
-let add_cmp_bin_ops = add_bin_ops ["=" ; "<" ; ">" ; "<=" ; ">=" ; "<>"] cmp_bin_op
 
 let raise_value =
   let raise_type =
@@ -59,7 +63,8 @@ let pervasives_sign =
   List.map (fun id -> Sig_value (Ident.create id, int_bin_op)) ["+" ; "-" ; "*" ; "/"] @
   List.map (fun id -> Sig_value (Ident.create id, float_bin_op)) ["+." ; "-." ; "*." ; "/."] @
   List.map (fun id -> Sig_value (Ident.create id, bool_bin_op)) ["&&" ; "||"] @
-  List.map (fun id -> Sig_value (Ident.create id, cmp_bin_op)) ["=" ; "<" ; ">" ; "<=" ; "=<" ; "<>"]
+  List.map (fun id -> Sig_value (Ident.create id, cmp_bin_op)) ["=" ; "<" ; ">" ; "<=" ; "=<" ; "<>"] @
+  List.map (fun id -> Sig_value (Ident.create id, float_float_function_type)) float_float_function_list
 
 let add_pervasives env =
   let mty = Mty_signature pervasives_sign in
