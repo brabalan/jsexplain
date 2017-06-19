@@ -201,8 +201,14 @@ let float_bin_op op =
 let bool_bin_op op =
   let func a =
     Unsafe.bind (bool_of_value a) (fun b1 ->
-    let curry b = Unsafe.bind (bool_of_value b) (fun b2 -> Unsafe.box (value_of_bool (b1 && b2))) in
+    let curry b = Unsafe.bind (bool_of_value b) (fun b2 -> Unsafe.box (value_of_bool (op b1 b2))) in
     Unsafe.box (Value_fun curry)) in
+  Value_fun func
+
+let cmp_bin_op op =
+  let func a =
+    let curry b = Unsafe.box (value_of_bool (op a b)) in
+    Unsafe.box (Value_fun curry) in
   Value_fun func
 
 let raise_function = Value_fun (fun v -> Unsafe.except v)
@@ -220,3 +226,5 @@ let prim_float_div = float_bin_op ( fun a b -> a /. b )
 let prim_bool_and = bool_bin_op ( fun a b -> a && b )
 let prim_bool_or = bool_bin_op ( fun a b -> a || b )
 (* let prim_mod x = int_bin_op ( mod ) x *)
+
+let prim_eq = cmp_bin_op value_eq
