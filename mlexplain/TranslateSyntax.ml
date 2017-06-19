@@ -125,7 +125,7 @@ let rec translate_expression file e =
   | Texp_while (c, b) ->
     let cond = translate_expression file c in
     let body = translate_expression file b in
-    Expression_sequence (loc, cond, body)
+    Expression_while (loc, cond, body)
   | Texp_for (i, _, fst, lst, dir, bdy) ->
     let id = i.name in
     let first = translate_expression file fst in
