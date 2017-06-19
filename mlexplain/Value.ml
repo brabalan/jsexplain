@@ -128,6 +128,7 @@ let rec value_eq v1 v2 = match v1 with
   end
 | _ -> false
 
+(** Check if both values are equal to each other *)
 and custom_eq c1 c2 = match c1 with
 | Sumtype s1 ->
   begin
@@ -137,6 +138,7 @@ and custom_eq c1 c2 = match c1 with
   end
 | _ -> false
 
+(** Check if both sumtypes are equal to each other *)
 and sumtype_eq s1 s2 =
   let t1 = Value_tuple s1.args in
   let t2 = Value_tuple s2.args in
@@ -218,6 +220,7 @@ let get_function = function
  * Language primitives
  ************************************************************)
 
+(** Create a primitive of type int -> int -> int from the given operator *)
 let int_bin_op op =
   let func = function
   | Value_int a ->
@@ -228,6 +231,7 @@ let int_bin_op op =
   | _ -> Unsafe.error "Expected an int" in
   Value_fun func
 
+(** Create a primitive of type float -> float -> float from the given operator *)
 let float_bin_op op =
   let func = function
   | Value_float a ->
@@ -238,6 +242,7 @@ let float_bin_op op =
   | _ -> Unsafe.error "Expected a float" in
   Value_fun func
 
+(** Create a primitive of type bool -> bool -> bool from the given operator *)
 let bool_bin_op op =
   let func a =
     Unsafe.bind (bool_of_value a) (fun b1 ->
@@ -245,28 +250,33 @@ let bool_bin_op op =
     Unsafe.box (Value_fun curry)) in
   Value_fun func
 
+(** Create a primitive of type 'a -> 'a -> bool from the given operator *)
 let cmp_bin_op op =
   let func a =
     let curry b = Unsafe.box (value_of_bool (op a b)) in
     Unsafe.box (Value_fun curry) in
   Value_fun func
 
+(** implementation of the raise function *)
 let raise_function = Value_fun (fun v -> Unsafe.except v)
 
+(** int arithmetic *)
 let prim_int_plus = int_bin_op ( fun a b -> a + b )
 let prim_int_sub = int_bin_op ( fun a b -> a - b )
 let prim_int_mul = int_bin_op ( fun a b -> a * b )
 let prim_int_div = int_bin_op ( fun a b -> a / b )
 
+(** float arithmetic *)
 let prim_float_plus = float_bin_op ( fun a b -> a +. b )
 let prim_float_sub = float_bin_op ( fun a b -> a -. b )
 let prim_float_mul = float_bin_op ( fun a b -> a *. b )
 let prim_float_div = float_bin_op ( fun a b -> a /. b )
 
+(** bool arithmetic *)
 let prim_bool_and = bool_bin_op ( fun a b -> a && b )
 let prim_bool_or = bool_bin_op ( fun a b -> a || b )
-(* let prim_mod x = int_bin_op ( mod ) x *)
 
+(** comparison functions *)
 let prim_eq = cmp_bin_op value_eq
 let prim_neq =
   let func a b = not (value_eq a b) in
@@ -294,6 +304,7 @@ let prim_float_float op =
   | _ -> Unsafe.error "Expected a float" in
   Value_fun func
 
+(** float -> float mathemtical functions *)
 let prim_sqrt = prim_float_float sqrt
 let prim_exp = prim_float_float exp
 let prim_log = prim_float_float log

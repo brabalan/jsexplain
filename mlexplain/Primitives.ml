@@ -20,10 +20,14 @@ let bin_op_value t = {
   val_attributes = []
 }
 
+(** type int -> int -> int *)
 let int_bin_op = bin_op_value type_int
+(** type float -> float -> float *)
 let float_bin_op = bin_op_value type_float
+(** type bool -> bool -> bool *)
 let bool_bin_op = bin_op_value type_bool
 
+(** type 'a -> 'a -> bool *)
 let cmp_bin_op = {
   val_type = cmp_op_type ;
   val_kind = Val_reg ;
@@ -31,6 +35,7 @@ let cmp_bin_op = {
   val_attributes = []
 }
 
+(** type float -> float *)
 let float_float_function_type = {
   val_type = newgenty (Tarrow (Nolabel, type_float, type_float, Cok)) ;
   val_kind = Val_reg ;
@@ -38,14 +43,11 @@ let float_float_function_type = {
   val_attributes = []
 }
 
+(** float -> float functions in Pervasives *)
 let float_float_function_list = ["sqrt" ; "exp" ; "log" ; "log10" ; "expm1" ; "log1p" ;
   "cos" ; "sin" ; "tan" ; "acos" ; "asin" ; "atan" ; "cosh" ; "sinh" ; "tanh" ; "ceil" ; "floor"]
 
-let add_bin_ops ops t env =
-  let add_value env id = Env.add_value id t env in
-  let ids = List.map Ident.create ops in
-  List.fold_left add_value env ids
-
+(** type of raise (exn -> 'a) *)
 let raise_value =
   let raise_type =
     let ret_type = newgenty (Tvar (Some "a")) in
@@ -58,6 +60,7 @@ let raise_value =
     val_attributes = []
   }
 
+(** Signature of the module Pervasives *)
 let pervasives_sign =
   Sig_value (Ident.create "raise", raise_value) ::
   List.map (fun id -> Sig_value (Ident.create id, int_bin_op)) ["+" ; "-" ; "*" ; "/"] @
@@ -66,6 +69,7 @@ let pervasives_sign =
   List.map (fun id -> Sig_value (Ident.create id, cmp_bin_op)) ["=" ; "<" ; ">" ; "<=" ; "=<" ; "<>"] @
   List.map (fun id -> Sig_value (Ident.create id, float_float_function_type)) float_float_function_list
 
+(** Add the module Pervasives to the environment *)
 let add_pervasives env =
   let mty = Mty_signature pervasives_sign in
   Env.add_module (Ident.create "Pervasives") mty env
