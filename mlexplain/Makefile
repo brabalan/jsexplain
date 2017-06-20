@@ -25,6 +25,9 @@ DISPLAYGEN     := $(OCAMLPAR) $(DISPLAYGEN_BIN)
 $(MLTOJS_BIN) $(LINEOF_BIN) $(PPX_BIN) $(ASSEMBLY_BIN) $(DISPLAYGEN_BIN):
 	$(error Missing generator tools, build from project root, or set paths.)
 
+.depends: *.ml $(PPX_BIN)
+	$(OCAMLDEP) -ppx $(PPX_BIN) -I . -all !TranslateSyntax.ml > $@
+
 STDLIB_DIR := $(GENERATOR_DIR)/stdlib_ml
 STDLIB_FLAG := -I $(STDLIB_DIR) -open Stdlib
 REPLACE_STDLIB := -nopervasives -nostdlib $(STDLIB_FLAG)
@@ -67,7 +70,7 @@ Vector.cmi: Unsafe.cmi
 %.unlog.js: %.ml %.cmi $(MLTOJS_BIN)
 	$(MLTOJS) -mode unlog -I $(STDLIB_DIR) $<
 
-%.token.js %.mlloc.js: %.ml %.cmi $(MLTOJS_BIN)
+%.token.js %.mlloc.js: %.ml %.cmi $(MLTOJS_BIN) $(PPX_BIN)
 	$(MLTOJS) -mode token -I $(STDLIB_DIR) $<
 
 %.pseudo.js: %.ml %.cmi $(MLTOJS_BIN)
@@ -113,3 +116,5 @@ clean:
 	rm *.cmi || true
 	rm `ls *.js | grep -v Vector.js` || true
 	rm *.byte || true
+	rm .depends
+	rm -r _build

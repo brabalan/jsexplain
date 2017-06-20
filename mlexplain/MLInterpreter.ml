@@ -11,60 +11,13 @@ type structure_item_result = {
   ctx : environment
 }
 
-type builtin_binding = {
-  name: string ;
-  value: value
-}
-
-let create_builtin name value = { name = name ; value = value }
-
 let build_initial_env s ctx =
-  let float_float_builtins = [
-    create_builtin "sqrt" prim_sqrt ;
-    create_builtin "exp" prim_exp ;
-    create_builtin "log" prim_log ;
-    create_builtin "log10" prim_log10 ;
-    create_builtin "expm1" prim_expm1 ;
-    create_builtin "log1p" prim_log1p ;
-    create_builtin "cos" prim_cos ;
-    create_builtin "sin" prim_sin ;
-    create_builtin "tan" prim_tan ;
-    create_builtin "acos" prim_acos ;
-    create_builtin "asin" prim_asin ;
-    create_builtin "atan" prim_atan ;
-    create_builtin "cosh" prim_cosh ;
-    create_builtin "sinh" prim_sinh ;
-    create_builtin "tanh" prim_tanh ;
-    create_builtin "ceil" prim_ceil ;
-    create_builtin "floor" prim_floor ;
-  ] in
-  let builtins = MLList.concat float_float_builtins
-    [
-      create_builtin "raise" raise_function ;
-      create_builtin "+" prim_int_plus ;
-      create_builtin "-" prim_int_sub ;
-      create_builtin "*" prim_int_mul ;
-      create_builtin "/" prim_int_div ;
-
-      create_builtin "+." prim_float_plus ;
-      create_builtin "-." prim_float_sub ;
-      create_builtin "*." prim_float_mul ;
-      create_builtin "/." prim_float_div ;
-
-      create_builtin "&&" prim_bool_and ;
-      create_builtin "||" prim_bool_or ;
-
-      create_builtin "=" prim_eq ;
-      create_builtin "<>" prim_neq ;
-      create_builtin "<" prim_lt ;
-      create_builtin ">" prim_gt ;
-      create_builtin "<=" prim_le ;
-      create_builtin ">=" prim_ge
-    ] in
   let func ctx builtin =
-    let idx = Vector.append s (Normal builtin.value) in
-    ExecutionContext.add builtin.name idx ctx in
-  MLList.foldl func ctx builtins
+    let name = builtin_name builtin in
+    let value = builtin_value builtin in
+    let idx = Vector.append s (Normal value) in
+    ExecutionContext.add name idx ctx in
+  MLList.foldl func ctx Value.initial_env
 
 let rec string_of_identifier = function
 | Lident id -> id

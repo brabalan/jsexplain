@@ -245,9 +245,11 @@ let float_bin_op op =
 (** Create a primitive of type bool -> bool -> bool from the given operator *)
 let bool_bin_op op =
   let func a =
-    Unsafe.bind (bool_of_value a) (fun b1 ->
-    let curry b = Unsafe.bind (bool_of_value b) (fun b2 -> Unsafe.box (value_of_bool (op b1 b2))) in
-    Unsafe.box (Value_fun curry)) in
+    let%result b1 = bool_of_value a in
+      let curry b =
+        let%result b2 = bool_of_value b in
+        Unsafe.box (value_of_bool (op b1 b2)) in
+    Unsafe.box (Value_fun curry) in
   Value_fun func
 
 (** Create a primitive of type 'a -> 'a -> bool from the given operator *)
@@ -292,10 +294,12 @@ let prim_le =
 let prim_gt = Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> value_inf b a)))
 let prim_ge =
   let func a b =
-    Unsafe.bind (value_inf a b) (fun iv ->
-    Unsafe.bind (bool_of_value iv) (fun ib ->
+    (* Unsafe.bind (value_inf a b) (fun iv -> *)
+    (* Unsafe.bind (bool_of_value iv) (fun ib -> *)
+    let%result iv = value_inf a b in
+    let%result ib = bool_of_value iv in
     let eqb = value_eq a b in
-    Unsafe.box (value_of_bool (ib || eqb)))) in
+    Unsafe.box (value_of_bool (ib || eqb)) in
   Value_fun (fun a -> Unsafe.box (Value_fun (fun b -> func b a)))
 
 let prim_float_float op =
@@ -322,3 +326,57 @@ let prim_sinh = prim_float_float sinh
 let prim_tanh = prim_float_float tanh
 let prim_ceil = prim_float_float ceil
 let prim_floor = prim_float_float floor
+
+type builtin_binding = {
+  name: string ;
+  value: value
+}
+
+let builtin_name b = b.name
+let builtin_value b = b.value
+
+let create_builtin name value = { name = name ; value = value }
+
+let initial_env =
+  let float_float_builtins = [
+    create_builtin "sqrt" prim_sqrt ;
+    create_builtin "exp" prim_exp ;
+    create_builtin "log" prim_log ;
+    create_builtin "log10" prim_log10 ;
+    create_builtin "expm1" prim_expm1 ;
+    create_builtin "log1p" prim_log1p ;
+    create_builtin "cos" prim_cos ;
+    create_builtin "sin" prim_sin ;
+    create_builtin "tan" prim_tan ;
+    create_builtin "acos" prim_acos ;
+    create_builtin "asin" prim_asin ;
+    create_builtin "atan" prim_atan ;
+    create_builtin "cosh" prim_cosh ;
+    create_builtin "sinh" prim_sinh ;
+    create_builtin "tanh" prim_tanh ;
+    create_builtin "ceil" prim_ceil ;
+    create_builtin "floor" prim_floor ;
+  ] in
+  MLList.concat float_float_builtins
+    [
+      create_builtin "raise" raise_function ;
+      create_builtin "+" prim_int_plus ;
+      create_builtin "-" prim_int_sub ;
+      create_builtin "*" prim_int_mul ;
+      create_builtin "/" prim_int_div ;
+
+      create_builtin "+." prim_float_plus ;
+      create_builtin "-." prim_float_sub ;
+      create_builtin "*." prim_float_mul ;
+      create_builtin "/." prim_float_div ;
+
+      create_builtin "&&" prim_bool_and ;
+      create_builtin "||" prim_bool_or ;
+
+      create_builtin "=" prim_eq ;
+      create_builtin "<>" prim_neq ;
+      create_builtin "<" prim_lt ;
+      create_builtin ">" prim_gt ;
+      create_builtin "<=" prim_le ;
+      create_builtin ">=" prim_ge
+    ]
