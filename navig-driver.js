@@ -815,7 +815,7 @@ function show_value(state, v, target, depth) {
       t.append("`" + v.value.label + " ");
       var opt = v.value.value_opt;
       if(opt.tag == "Some" && opt.value.tag == "Result") {
-        var value = opt.value.result;
+        var result = opt.value.result;
         if(result.tag == "Value_variant" || result.tag == "Value_custom") {
           t.append("(");
           show_value(state, result, target, depth);
