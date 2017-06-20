@@ -52,6 +52,7 @@ let rec translate_expression file e =
   | Texp_function (_, cases, _) ->
     let map_f case = {
       patt = translate_pattern file case.c_lhs ;
+      guard = Option.map (translate_expression file) case.c_guard;
       expr = translate_expression file case.c_rhs
     } in
     let case_array = Array.of_list (List.map map_f cases) in
@@ -84,6 +85,7 @@ let rec translate_expression file e =
   | Texp_match (pexp, pcases, _, _) ->
     let map_f case = {
       patt = translate_pattern file case.c_lhs ;
+      guard = Option.map (translate_expression file) case.c_guard;
       expr = translate_expression file case.c_rhs
     } in
     let cases = Array.of_list (List.map map_f pcases) in
@@ -137,6 +139,7 @@ let rec translate_expression file e =
     let expr = translate_expression file e in
     let map_f case = {
       patt = translate_pattern file case.c_lhs ;
+      guard = Option.map (translate_expression file) case.c_guard;
       expr = translate_expression file case.c_rhs
     } in
     let cases = Array.of_list (List.map map_f cs) in
@@ -417,8 +420,9 @@ and js_of_pattern = function
 
 and js_of_case case =
   let js_patt = js_of_pattern case.patt in
+  let js_guard = js_of_option js_of_expression case.guard in
   let js_expr = js_of_expression case.expr in
-  Js.Unsafe.obj [| ("patt", js_patt) ; ("expr", js_expr) |]
+  Js.Unsafe.obj [| ("patt", js_patt) ; ("guard", js_guard) ; ("expr", js_expr) |]
 
 and js_of_binding b =
   let js_name = Js.Unsafe.inject (Js.string b.name) in

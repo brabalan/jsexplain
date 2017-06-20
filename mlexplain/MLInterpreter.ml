@@ -353,7 +353,18 @@ and pattern_match_many s ctx value cases = match cases with
 | x :: xs ->
   match pattern_match s ctx value x.patt with
   | Unsafe.Error e -> pattern_match_many s ctx value xs
-  | Unsafe.Result ctx' -> run_expression s ctx' x.expr
+  | Unsafe.Result ctx' ->
+    begin
+      match x.guard with
+      | None -> run_expression s ctx' x.expr
+      | Some guard ->
+        Unsafe.bind (run_expression s ctx' guard) (fun res ->
+        Unsafe.bind (bool_of_value res) (fun b ->
+        if b then
+          run_expression s ctx' x.expr
+        else
+          pattern_match_many s ctx value xs))
+    end
   | Unsafe.Exception ex -> Unsafe.Exception ex
 
 and pattern_match_array s ctx ary patts =

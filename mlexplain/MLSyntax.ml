@@ -60,6 +60,7 @@ and pattern =
 
 and case = {
   patt : pattern ;
+  guard : expression option ;
   expr : expression
 }
 
